@@ -1,0 +1,75 @@
+from rest_framework import serializers
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+
+class CreateUserSerializer(serializers.ModelSerializer):
+
+    password = serializers.CharField(
+        write_only=True,
+        min_length=6,
+        required=True,
+    )
+
+    email = serializers.EmailField(
+        required=True,
+    )
+
+    role = serializers.ChoiceField(
+        choices=User.ROLE_CHOICES
+    )
+
+    class Meta:
+        model = User
+        fields = [
+            "username",
+            "email",
+            "password",
+            "role",
+            "phone",
+        ]
+
+    # ✅ check username unique
+    def validate_username(self, value):
+
+        if User.objects.filter(username=value).exists():
+            raise serializers.ValidationError(
+                "Username already exists"
+            )
+
+        return value
+
+    # ✅ check email unique
+    def validate_email(self, value):
+
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError(
+                "Email already exists"
+            )
+
+        return value
+
+    # ✅ block SYSTEM_ADMIN creation
+    def validate_role(self, value):
+
+        if value == "SYSTEM_ADMIN":
+            raise serializers.ValidationError(
+                "Cannot create SYSTEM_ADMIN"
+            )
+
+        return value
+
+    def create(self, validated_data):
+
+        password = validated_data.pop("password")
+
+        user = User(**validated_data)
+
+        user.set_password(password)
+
+        user.save()
+
+        user.raw_password = password
+
+        return user
