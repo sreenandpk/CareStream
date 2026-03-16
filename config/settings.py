@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "apps.ai_engine",
     "apps.devices",
     "apps.audit",
+    "apps.accounts",
 ]
 
 # =====================
