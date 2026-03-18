@@ -40,7 +40,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "rest_framework",
     "rest_framework.authtoken",
-
+    "rest_framework_simplejwt.token_blacklist",
     # Local apps
     "apps.wards",
     "apps.rooms",
@@ -52,7 +52,7 @@ INSTALLED_APPS = [
     "apps.devices",
     "apps.audit",
     "apps.accounts",
-    "apps.core"
+    "apps.core",
 ]
 
 # =====================

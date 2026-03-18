@@ -1,6 +1,6 @@
 from django.core.mail import send_mail
 from django.conf import settings
-
+import logging
 
 def send_user_credentials(email, username, password):
 
@@ -22,4 +22,7 @@ OTP / Password: {password}
             fail_silently=False,
         )
     except Exception as e:
-        print("Email error:", e)
+        
+        logger = logging.getLogger(__name__)
+
+        logger.error(f"Email error: {e}")

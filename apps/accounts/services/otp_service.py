@@ -1,4 +1,4 @@
-import random
+import secrets
 from datetime import timedelta
 
 from django.utils import timezone
@@ -6,7 +6,7 @@ from django.utils import timezone
 from apps.accounts.models.otp_model import OTP
 from apps.accounts.services.email_service import send_user_credentials
 
-
+import logging
 def generate_otp(user):
 
     # delete old OTP
@@ -16,7 +16,7 @@ def generate_otp(user):
     ).delete()
 
     # create code
-    code = str(random.randint(100000, 999999))
+    code = str(secrets.randbelow(900000) + 100000)
 
     expires_at = timezone.now() + timedelta(
         minutes=5
@@ -37,6 +37,8 @@ def generate_otp(user):
                 password=code,   # send OTP as password field
             )
         except Exception as e:
-            print("OTP email error:", e)
+            logger = logging.getLogger(__name__)
+
+            logger.error(f"Email error: {e}")
 
     return otp
