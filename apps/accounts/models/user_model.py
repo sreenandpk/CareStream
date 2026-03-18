@@ -11,15 +11,30 @@ class User(AbstractUser):
         max_length=20,
         choices=ROLE_CHOICES,
         default="ADMIN",
+        db_index=True,
     )
+    email = models.EmailField(unique=True)
     phone = models.CharField(
         max_length=15,
         blank=True,
         null=True,
+        db_index=True,
     )
     is_verified = models.BooleanField(
         default=False,
         help_text="OTP verification status",
+    )
+    force_password_reset = models.BooleanField(
+        default=False,
+        help_text="User must reset password"
+    )
+    # ✅ security
+    failed_login_attempts = models.IntegerField(
+        default=0
+    )
+
+    is_locked = models.BooleanField(
+        default=False
     )
     created_at = models.DateTimeField(
         auto_now_add=True
@@ -30,7 +45,10 @@ class User(AbstractUser):
     class Meta:
         ordering = ["id"]
     def save(self, *args, **kwargs):
+
         if self.is_superuser:
+            self.is_staff = True
+            self.is_verified = True
             self.role = "SYSTEM_ADMIN"
         super().save(*args, **kwargs)
     def __str__(self):

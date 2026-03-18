@@ -70,6 +70,6 @@ class CreateUserSerializer(serializers.ModelSerializer):
 
         user.save()
 
-        user.raw_password = password
+        self.context["raw_password"] = password
 
         return user

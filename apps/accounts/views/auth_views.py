@@ -20,12 +20,15 @@ from apps.accounts.serializers.auth_serializers import (
 
 from apps.accounts.services.otp_service import generate_otp
 from apps.accounts.models import User, OTP
-
+from apps.accounts.serializers.password_serializers import (
+    ForgotPasswordSerializer,
+    VerifyResetOTPSerializer,
+    ResetPasswordSerializer,
+)
 
 # =====================
 # LOGIN
 # =====================
-
 class LoginView(APIView):
 
     authentication_classes = []
@@ -43,7 +46,31 @@ class LoginView(APIView):
 
         user = serializer.validated_data["user"]
 
+        # check inactive
+        if not user.is_active:
+            raise ValidationError("User inactive")
+
+
+        # =====================
+        # FORCE PASSWORD RESET
+        # =====================
+        if hasattr(user, "force_password_reset") and user.force_password_reset:
+
+            generate_otp(user)
+
+            return Response(
+                {
+                    "success": True,
+                    "message": "Password reset required",
+                    "reset_required": True,
+                    "username": user.username,
+                }
+            )
+
+
+        # =====================
         # OTP for admin
+        # =====================
         if user.role in ["ADMIN", "SYSTEM_ADMIN"]:
 
             generate_otp(user)
@@ -57,6 +84,10 @@ class LoginView(APIView):
                 }
             )
 
+
+        # =====================
+        # NORMAL LOGIN
+        # =====================
         refresh = RefreshToken.for_user(user)
         access_token = str(refresh.access_token)
 
@@ -82,12 +113,9 @@ class LoginView(APIView):
         )
 
         return response
-
-
 # =====================
 # VERIFY OTP
 # =====================
-
 class VerifyOTPView(APIView):
 
     authentication_classes = []
@@ -134,8 +162,14 @@ class VerifyOTPView(APIView):
                 "OTP expired"
             )
 
+        # mark otp used
         otp.is_used = True
         otp.save()
+
+        # mark user verified
+        if not user.is_verified:
+            user.is_verified = True
+            user.save()
 
         refresh = RefreshToken.for_user(user)
         access_token = str(refresh.access_token)
@@ -162,8 +196,6 @@ class VerifyOTPView(APIView):
         )
 
         return response
-
-
 # =====================
 # REFRESH
 # =====================
@@ -243,3 +275,163 @@ class LogoutView(APIView):
         response.delete_cookie("refresh", path="/")
 
         return response
+# =====================
+# FORGOT PASSWORD
+# =====================
+
+class ForgotPasswordView(APIView):
+
+    authentication_classes = []
+    permission_classes = []
+
+    def post(self, request):
+
+        serializer = ForgotPasswordSerializer(
+            data=request.data
+        )
+
+        serializer.is_valid(
+            raise_exception=True
+        )
+
+        username = serializer.validated_data["username"]
+
+        try:
+            user = User.objects.get(
+                username=username
+            )
+        except User.DoesNotExist:
+            raise NotFound("User not found")
+
+        generate_otp(user)
+
+        return Response(
+            {
+                "success": True,
+                "message": "If account exists, OTP sent",
+                "username": user.username,
+            }
+        )
+# =====================
+# VERIFY RESET OTP
+# =====================
+
+class VerifyResetOTPView(APIView):
+
+    authentication_classes = []
+    permission_classes = []
+
+    def post(self, request):
+
+        serializer = VerifyResetOTPSerializer(
+            data=request.data
+        )
+
+        serializer.is_valid(
+            raise_exception=True
+        )
+
+        username = serializer.validated_data["username"]
+        code = serializer.validated_data["code"]
+
+        try:
+            user = User.objects.get(
+                username=username
+            )
+        except User.DoesNotExist:
+            raise NotFound("User not found")
+
+        otp = (
+            OTP.objects
+            .filter(
+                user=user,
+                code=code,
+                is_used=False,
+            )
+            .order_by("-created_at")
+            .first()
+        )
+
+        if not otp:
+            raise ValidationError(
+                "Invalid OTP"
+            )
+
+        if otp.is_expired():
+            raise ValidationError(
+                "OTP expired"
+            )
+
+        otp.is_used = True
+        otp.save()
+
+        return Response(
+            {
+                "success": True,
+                "message": "OTP verified",
+                "username": user.username,
+            }
+        )
+# =====================
+# RESET PASSWORD
+# =====================
+class ResetPasswordView(APIView):
+
+    authentication_classes = []
+    permission_classes = []
+
+    def post(self, request):
+
+        serializer = ResetPasswordSerializer(
+            data=request.data
+        )
+
+        serializer.is_valid(
+            raise_exception=True
+        )
+
+        username = serializer.validated_data["username"]
+        new_password = serializer.validated_data["new_password"]
+
+        try:
+            user = User.objects.get(
+                username=username
+            )
+        except User.DoesNotExist:
+            raise NotFound("User not found")
+
+        # check last OTP used
+        otp = (
+            OTP.objects
+            .filter(
+                user=user,
+                is_used=True,
+            )
+            .order_by("-created_at")
+            .first()
+        )
+
+        if not otp:
+            raise ValidationError(
+                "OTP verification required"
+            )
+
+        if otp.is_expired():
+            raise ValidationError(
+                "OTP expired"
+            )
+
+        # set password
+        user.set_password(new_password)
+
+        if hasattr(user, "force_password_reset"):
+            user.force_password_reset = False
+
+        user.save()
+
+        return Response(
+            {
+                "success": True,
+                "message": "Password reset successful",
+            }
+        )
