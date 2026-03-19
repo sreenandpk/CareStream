@@ -16,8 +16,17 @@ from .views.user_views import (
     UserDeactivateView,
     ChangePasswordView,
     AdminForceResetView,
-    UnlockUserView
+    UnlockUserView,
+    OnlineUsersView
 )
+from apps.accounts.views.login_history_views import (
+    LoginHistoryListView,
+)
+from apps.accounts.views.session_views import (
+    ForceLogoutUserView,
+    ForceLogoutAllView,
+)
+
 urlpatterns = [
     path("login/", LoginView.as_view()),
     path("verify-otp/", VerifyOTPView.as_view()),
@@ -34,4 +43,8 @@ urlpatterns = [
     path("reset-password/", ResetPasswordView.as_view()),
     path("users/<int:user_id>/force-reset/",AdminForceResetView.as_view()),
     path("users/<int:user_id>/unlock/",UnlockUserView.as_view()),
+    path("login-history/",LoginHistoryListView.as_view()),
+    path("sessions/force-logout/<int:user_id>/",ForceLogoutUserView.as_view()),
+    path("sessions/force-logout-all/",ForceLogoutAllView.as_view()),
+    path("online-users/",OnlineUsersView.as_view()),
 ]
