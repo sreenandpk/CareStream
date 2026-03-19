@@ -8,7 +8,9 @@ from datetime import timedelta
 # =====================
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+import os
 
+LOG_DIR = os.path.join(BASE_DIR, "logs")
 load_dotenv()
 
 # =====================
@@ -41,6 +43,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework.authtoken",
     "rest_framework_simplejwt.token_blacklist",
+    "django_ratelimit",
     # Local apps
     "apps.wards",
     "apps.rooms",
@@ -68,6 +71,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "django_ratelimit.middleware.RatelimitMiddleware",
 ]
 
 # =====================
@@ -197,3 +201,95 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
 
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+
+    "formatters": {
+        "verbose": {
+            "format": "[{asctime}] {levelname} {name} {message}",
+            "style": "{",
+        },
+    },
+
+    "handlers": {
+
+        "app_file": {
+            "level": "INFO",
+            "class": "logging.FileHandler",
+            "filename": os.path.join(LOG_DIR, "app.log"),
+            "formatter": "verbose",
+        },
+
+        "error_file": {
+            "level": "ERROR",
+            "class": "logging.FileHandler",
+            "filename": os.path.join(LOG_DIR, "error.log"),
+            "formatter": "verbose",
+        },
+
+        "security_file": {
+            "level": "WARNING",
+            "class": "logging.FileHandler",
+            "filename": os.path.join(LOG_DIR, "security.log"),
+            "formatter": "verbose",
+        },
+
+        "audit_file": {
+            "level": "INFO",
+            "class": "logging.FileHandler",
+            "filename": os.path.join(LOG_DIR, "audit.log"),
+            "formatter": "verbose",
+        },
+
+        "console": {
+            "class": "logging.StreamHandler",
+        },
+    },
+
+    "loggers": {
+
+        "django": {
+            "handlers": ["console", "app_file"],
+            "level": "INFO",
+            "propagate": True,
+        },
+
+        "django.request": {
+            "handlers": ["error_file"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+
+        "security": {
+            "handlers": ["security_file"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+
+        "audit": {
+            "handlers": ["audit_file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+
+        "app": {
+            "handlers": ["app_file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+    },
+}
+RATELIMIT_ENABLE = True
+
+RATELIMIT_USE_CACHE = "default"
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/1",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+}

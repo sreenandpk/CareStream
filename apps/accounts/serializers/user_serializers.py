@@ -73,3 +73,50 @@ class CreateUserSerializer(serializers.ModelSerializer):
         self.context["raw_password"] = password
 
         return user
+
+class UserListSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "username",
+            "email",
+            "role",
+            "phone",
+            "is_active",
+            "is_verified",
+            "created_at",
+        ]
+
+class UserUpdateSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = [
+            "email",
+            "phone",
+            "role",
+            "is_active",
+        ]
+        def validate_role(self, value):
+
+            if value == "SYSTEM_ADMIN":
+                raise serializers.ValidationError(
+                    "Cannot assign SYSTEM_ADMIN"
+                )
+
+            return value
+        def validate_email(self, value):
+
+            if User.objects.filter(
+                email=value
+            ).exclude(
+                id=self.instance.id
+            ).exists():
+
+                raise serializers.ValidationError(
+                    "Email already exists"
+                )
+
+            return value

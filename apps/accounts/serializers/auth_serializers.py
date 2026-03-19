@@ -3,7 +3,6 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
-
 class LoginSerializer(serializers.Serializer):
 
     username = serializers.CharField()
@@ -39,21 +38,25 @@ class LoginSerializer(serializers.Serializer):
         # ✅ check password manually
         if not user.check_password(password):
 
-            user.failed_login_attempts += 1
+            # ❌ do not count attempts for SYSTEM_ADMIN
+            if user.role != "SYSTEM_ADMIN":
 
-            # lock after 5 attempts
-            if user.failed_login_attempts >= 5:
-                user.is_locked = True
+                user.failed_login_attempts += 1
 
-            user.save()
+                # lock after 5 attempts
+                if user.failed_login_attempts >= 5:
+                    user.is_locked = True
+
+                user.save()
 
             raise serializers.ValidationError(
                 "Invalid credentials"
             )
 
-        # ✅ success → reset attempts
-        user.failed_login_attempts = 0
-        user.save()
+        # ✅ success → reset attempts (except system admin optional)
+        if user.role != "SYSTEM_ADMIN":
+            user.failed_login_attempts = 0
+            user.save()
 
         if not user.is_active:
             raise serializers.ValidationError(
@@ -63,7 +66,6 @@ class LoginSerializer(serializers.Serializer):
         attrs["user"] = user
 
         return attrs
-
 
 class VerifyOTPSerializer(serializers.Serializer):
 
