@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>CareStream API</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist/swagger-ui.css">
+
+    <style>
+        /* ===== MAIN WIDTH ===== */
+
+        .swagger-ui .wrapper {
+            max-width: 800px !important;
+            margin: auto !important;
+        }
+
+        /* ===== API BOX WIDTH ===== */
+
+        .swagger-ui .opblock {
+            max-width: 800px !important;
+            margin: auto !important;
+        }
+
+        /* ===== FONT SIZE SMALL ===== */
+
+        .swagger-ui {
+            font-size: 12px !important;
+        }
+
+        .swagger-ui .opblock-summary-path {
+            font-size: 12px !important;
+        }
+
+        .swagger-ui .opblock-summary-method {
+            font-size: 11px !important;
+            padding: 3px 6px !important;
+        }
+
+        .swagger-ui .btn {
+            font-size: 11px !important;
+            padding: 3px 6px !important;
+        }
+
+        .swagger-ui input,
+        .swagger-ui textarea {
+            font-size: 11px !important;
+        }
+
+        /* ===== reduce padding ===== */
+
+        .swagger-ui .opblock {
+            padding: 2px !important;
+        }
+
+        .swagger-ui .opblock-summary {
+            padding: 5px !important;
+        }
+
+        .swagger-ui .opblock-body {
+            padding: 5px !important;
+        }
+
+        /* ===== header smaller ===== */
+
+        .swagger-ui .topbar {
+            display: none !important;
+        }
+
+        /* ===== model panel smaller ===== */
+
+        .swagger-ui .models {
+            font-size: 11px !important;
+        }
+
+        /* ===== response box smaller ===== */
+
+        .swagger-ui pre {
+            font-size: 11px !important;
+        }
+
+        /* ===== make everything compact ===== */
+
+        .swagger-ui .scheme-container {
+            padding: 5px !important;
+        }
+
+        .swagger-ui .information-container {
+            padding: 5px !important;
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <div id="swagger-ui"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist/swagger-ui-bundle.js"></script>
+
+    <script>
+        const ui = SwaggerUIBundle({
+            url: "/api/schema/",
+            dom_id: "#swagger-ui",
+            presets: [
+                SwaggerUIBundle.presets.apis,
+            ],
+            layout: "BaseLayout",
+        });
+    </script>
+
+</body>
+
+</html>

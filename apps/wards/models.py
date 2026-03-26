@@ -1,7 +1,7 @@
 from django.db import models
-from django.db import models
 from django.core.validators import MinValueValidator
-class Ward(models.Model):
+from apps.core.models.base_model import BaseModel
+class Ward(BaseModel):
     name = models.CharField(
         max_length=100,
         unique=True
@@ -14,11 +14,8 @@ class Ward(models.Model):
         blank=True,
         null=True
     )
-    created_at = models.DateTimeField(
-        auto_now_add=True
-    )
-    updated_at = models.DateTimeField(
-        auto_now=True
+    is_active = models.BooleanField(
+        default=True
     )
     class Meta:
         ordering = ["floor"]

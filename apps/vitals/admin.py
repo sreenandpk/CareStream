@@ -1,44 +1,66 @@
 from django.contrib import admin
-from .models import Vital
+from apps.vitals.models import Vital
 @admin.register(Vital)
 class VitalAdmin(admin.ModelAdmin):
     list_display = (
-        "patient",
+        "id",
         "device",
+        "patient",
         "heart_rate",
         "spo2",
-        "respiratory_rate",
         "temperature",
-        "systolic_bp",
-        "diastolic_bp",
         "recorded_at",
     )
     search_fields = (
+        "device__serial_number",
         "patient__name",
-        "device__device_id",
     )
-    list_filter = ("recorded_at",)
-    date_hierarchy = "recorded_at"
-    ordering = ("-recorded_at",)
-    list_select_related = ("patient", "device")
-    # 🔒 Read-only vitals
-    readonly_fields = (
-        "patient",
+    list_filter = (
         "device",
-        "heart_rate",
-        "spo2",
-        "respiratory_rate",
-        "temperature",
-        "systolic_bp",
-        "diastolic_bp",
+        "patient",
         "recorded_at",
     )
-    # ❌ No manual creation
-    def has_add_permission(self, request):
-        return False
-    # ❌ No editing
-    def has_change_permission(self, request, obj=None):
-        return False
-    # ❌ No deletion
-    def has_delete_permission(self, request, obj=None):
-        return False
+    ordering = (
+        "-recorded_at",
+    )
+    list_select_related = (
+        "device",
+        "patient",
+    )
+    readonly_fields = (
+        "recorded_at",
+        "created_at",
+        "updated_at",
+        "deleted_at",
+    )
+    fieldsets = (
+        ("Relations", {
+            "fields": (
+                "device",
+                "patient",
+            )
+        }),
+        ("Vitals", {
+            "fields": (
+                "heart_rate",
+                "spo2",
+                "respiratory_rate",
+                "temperature",
+                "systolic_bp",
+                "diastolic_bp",
+            )
+        }),
+        ("Timestamps", {
+            "fields": (
+                "recorded_at",
+                "created_at",
+                "updated_at",
+                "deleted_at",
+            )
+        }),
+    )
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.filter(
+            is_deleted=False
+        )

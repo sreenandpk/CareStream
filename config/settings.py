@@ -37,13 +37,13 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-
     # Third party
     "corsheaders",
     "rest_framework",
     "rest_framework.authtoken",
     "rest_framework_simplejwt.token_blacklist",
     "django_ratelimit",
+    "drf_spectacular",
     # Local apps
     "apps.wards",
     "apps.rooms",
@@ -53,7 +53,6 @@ INSTALLED_APPS = [
     "apps.alerts",
     "apps.ai_engine",
     "apps.devices",
-    "apps.audit",
     "apps.accounts",
     "apps.core",
 ]
@@ -89,7 +88,7 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "templates"],  # ← add this
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -146,9 +145,10 @@ REST_FRAMEWORK = {
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": (
-        "rest_framework.permissions.AllowAny",
+        "rest_framework.permissions.IsAuthenticated",
     ),
      "EXCEPTION_HANDLER": "apps.core.exceptions.custom_exception_handler",
+     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 
 }
 
@@ -167,10 +167,10 @@ SIMPLE_JWT = {
 # =====================
 
 LANGUAGE_CODE = "en-us"
-
-TIME_ZONE = "UTC"
+TIME_ZONE = "Asia/Kolkata"
 
 USE_I18N = True
+
 USE_TZ = True
 
 # =====================
@@ -292,4 +292,30 @@ CACHES = {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         }
     }
+}
+SPECTACULAR_SETTINGS = {
+    "TITLE": "CareStream API",
+    "DESCRIPTION": "CareStream Backend API",
+    "VERSION": "1.0.0",
+
+    "SERVE_INCLUDE_SCHEMA": False,
+
+    "SWAGGER_UI_SETTINGS": {
+        "layout": "BaseLayout",
+        "docExpansion": "none",
+        "filter": True,
+        "defaultModelsExpandDepth": -1,
+    },
+
+    "SECURITY": [
+        {"BearerAuth": []},
+    ],
+
+    "SECURITY_SCHEMES": {
+        "BearerAuth": {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT",
+        }
+    },
 }

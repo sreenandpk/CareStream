@@ -28,11 +28,9 @@ class User(AbstractUser):
         default=False,
         help_text="User must reset password"
     )
-    # ✅ security
     failed_login_attempts = models.IntegerField(
         default=0
     )
-
     is_locked = models.BooleanField(
         default=False
     )
@@ -45,7 +43,6 @@ class User(AbstractUser):
     class Meta:
         ordering = ["id"]
     def save(self, *args, **kwargs):
-
         if self.is_superuser:
             self.is_staff = True
             self.is_verified = True

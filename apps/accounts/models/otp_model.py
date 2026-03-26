@@ -3,13 +3,22 @@ from django.conf import settings
 from django.utils import timezone
 from datetime import timedelta
 class OTP(models.Model):
+    TYPE_CHOICES = [
+        ("LOGIN", "Login"),
+    ]
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name="otps"
+        related_name="otps",
+        db_index=True,
     )
     code = models.CharField(
-        max_length=6
+        max_length=6,
+        db_index=True,
+    )
+    otp_type = models.CharField(
+        max_length=10,
+        choices=TYPE_CHOICES,
     )
     is_used = models.BooleanField(
         default=False
