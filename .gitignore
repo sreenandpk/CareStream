@@ -1,71 +1,66 @@
-# --------------------
-# Environment secrets
-# --------------------
+# =========================
+# 🔐 Environment secrets
+# =========================
 .env
 .env.*
+Backend/.env
+Frontend/.env
 
-# --------------------
-# Python cache
-# --------------------
-__pycache__/
-*.py[cod]
-*$py.class
+# =========================
+# 🐍 Backend (Django)
+# =========================
+Backend/__pycache__/
+Backend/**/*.py[cod]
 
-# --------------------
-# Virtual environments
-# --------------------
-venv/
-env/
-ENV/
-.venv/
+Backend/venv/
+Backend/env/
+Backend/.venv/
 
-# --------------------
-# Django
-# --------------------
-*.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
+Backend/*.log
+Backend/db.sqlite3
+Backend/db.sqlite3-journal
 
-# --------------------
-# Static / Media
-# --------------------
-staticfiles/
-media/
+Backend/staticfiles/
+Backend/media/
 
-# --------------------
-# Migrations (optional)
-# --------------------
-# */migrations/*
-# !*/migrations/__init__.py
+# =========================
+# ⚛️ Frontend (React)
+# =========================
+Frontend/node_modules/
+Frontend/build/
+Frontend/dist/
 
-# --------------------
-# OS files
-# --------------------
+Frontend/.env
+Frontend/.env.*
+
+# =========================
+# ⚙️ Celery / Redis
+# =========================
+Backend/celerybeat-schedule*
+Backend/celerybeat.pid
+
+# =========================
+# 🧪 Testing / Coverage
+# =========================
+Backend/.coverage
+Backend/htmlcov/
+Backend/.pytest_cache/
+
+# =========================
+# 💻 OS Files
+# =========================
 .DS_Store
 Thumbs.db
 
-# --------------------
-# IDEs / Editors
-# --------------------
+# =========================
+# 🧠 IDE / Editor
+# =========================
 .vscode/
 .idea/
 
-# --------------------
-# Build / distributions
-# --------------------
-build/
-dist/
-*.egg-info/
-
-# --------------------
-# Coverage / Testing
-# --------------------
-.coverage
-htmlcov/
-.pytest_cache/
-
-# --------------------
-# Logs
-# --------------------
-*.log
+# =========================
+# 📦 Build / Distribution
+# =========================
+Backend/build/
+Backend/dist/
+Backend/*.egg-info/
