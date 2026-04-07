@@ -1,8 +1,19 @@
 from rest_framework.exceptions import NotFound
 from django.contrib.auth import get_user_model
+
 User = get_user_model()
-def get_all_users():
-    return User.objects.filter(is_active=True).order_by("id")
+
+
+def get_all_users(role=None):
+    queryset = User.objects.filter(is_active=True)
+
+    # 🔥 OPTIONAL FILTER
+    if role:
+        queryset = queryset.filter(role=role)
+
+    return queryset.order_by("id")
+
+
 def get_user_by_id(user_id):
     try:
         return User.objects.get(id=user_id)

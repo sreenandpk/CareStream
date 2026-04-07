@@ -1,12 +1,32 @@
 from rest_framework import serializers
 from apps.patients.models import Patient
 from apps.beds.models import Bed
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+
 class AdminPatientSerializer(serializers.ModelSerializer):
+
+    # 🔥 ADD THESE
+    doctor = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.filter(role="DOCTOR"),
+        required=False,
+        allow_null=True
+    )
+
+    mode = serializers.ChoiceField(
+        choices=Patient.MODE_CHOICES,
+        required=False
+    )
+
     class Meta:
         model = Patient
         fields = [
             "id",
             "bed",
+            "doctor",  
+            "mode",     
             "name",
             "age",
             "gender",
@@ -17,25 +37,39 @@ class AdminPatientSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
         read_only_fields = [
             "id",
             "admission_date",
             "created_at",
             "updated_at",
         ]
+
+    # 🔥 BED VALIDATION
     def validate(self, data):
         bed = data.get("bed")
+
         if bed:
             qs = Patient.all_objects.filter(
                 bed=bed,
                 is_deleted=False,
+                is_active=True,
             )
+
             if self.instance:
-                qs = qs.exclude(
-                    id=self.instance.id
-                )
+                qs = qs.exclude(id=self.instance.id)
+
             if qs.exists():
                 raise serializers.ValidationError(
                     "This bed already has a patient"
                 )
+
         return data
+
+    # 🔥 DOCTOR VALIDATION (EXTRA SAFETY)
+    def validate_doctor(self, value):
+        if value and value.role != "DOCTOR":
+            raise serializers.ValidationError(
+                "Assigned user must be a doctor"
+            )
+        return value

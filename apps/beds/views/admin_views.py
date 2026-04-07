@@ -1,83 +1,76 @@
 import logging
+from django.shortcuts import get_object_or_404
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from drf_spectacular.utils import extend_schema
 from rest_framework.permissions import IsAuthenticated
-from apps.core.role_permissions import (
-    IsAdminOrSystemAdmin,
-)
-from apps.beds.serializers.admin_serializers import (
-    AdminBedSerializer,
-)
+from drf_spectacular.utils import extend_schema
+
+from apps.core.role_permissions import IsAdminOrSystemAdmin
+from apps.beds.models import Bed
+from apps.beds.serializers.admin_serializers import AdminBedSerializer
 from apps.beds.services.bed_service import (
     get_all_beds,
-    get_bed_by_id,
     create_bed,
     update_bed,
     delete_bed,
 )
+
 app_logger = logging.getLogger("app")
 audit_logger = logging.getLogger("audit")
-error_logger = logging.getLogger("django.request")
+
+
 class AdminBedListCreateView(APIView):
-    permission_classes = [
-        IsAuthenticated,
-        IsAdminOrSystemAdmin,
-    ]
+    permission_classes = [IsAuthenticated, IsAdminOrSystemAdmin]
+
     @extend_schema(
         tags=["Beds Admin"],
         responses=AdminBedSerializer(many=True),
     )
     def get(self, request):
-        app_logger.info(
-            f"Bed list requested by {request.user.username}"
+        app_logger.info(f"Bed list requested by {request.user.username}")
+
+        # ✅ PERFORMANCE
+        beds = (
+            get_all_beds()
+            .select_related("room__ward", "patient")   # deep FK
         )
-        beds = get_all_beds()
-        serializer = AdminBedSerializer(
-            beds,
-            many=True,
-        )
-        return Response(
-            {
-                "success": True,
-                "data": serializer.data,
-            }
-        )
+
+        serializer = AdminBedSerializer(beds, many=True)
+
+        return Response({
+            "success": True,
+            "data": serializer.data,
+        })
+
+
     @extend_schema(
         tags=["Beds Admin"],
         request=AdminBedSerializer,
         responses=AdminBedSerializer,
     )
     def post(self, request):
-        app_logger.info(
-            f"Create bed request by {request.user.username}"
-        )
-        serializer = AdminBedSerializer(
-            data=request.data
-        )
-        serializer.is_valid(
-            raise_exception=True
-        )
-        bed = create_bed(
-            serializer.validated_data,
-            request.user,
-        )
+        app_logger.info(f"Create bed request by {request.user.username}")
+
+        serializer = AdminBedSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        bed = create_bed(serializer.validated_data, request.user)
+
         audit_logger.info(
             f"Bed created {bed.id} by {request.user.username}"
         )
-        return Response(
-            {
-                "success": True,
-                "data": AdminBedSerializer(bed).data,
-            },
-            status=status.HTTP_201_CREATED,
-        )
+
+        return Response({
+            "success": True,
+            "data": AdminBedSerializer(bed).data,
+        }, status=status.HTTP_201_CREATED)
+
+
 class AdminBedDetailView(APIView):
-    permission_classes = [
-        IsAuthenticated,
-        IsAdminOrSystemAdmin,
-    ]
+    permission_classes = [IsAuthenticated, IsAdminOrSystemAdmin]
+
     @extend_schema(
         tags=["Beds Admin"],
         responses=AdminBedSerializer,
@@ -86,13 +79,18 @@ class AdminBedDetailView(APIView):
         app_logger.info(
             f"Bed detail {bed_id} by {request.user.username}"
         )
-        bed = get_bed_by_id(bed_id)
-        return Response(
-            {
-                "success": True,
-                "data": AdminBedSerializer(bed).data,
-            }
+
+        bed = get_object_or_404(
+            Bed.objects.select_related("room__ward", "patient"),
+            id=bed_id
         )
+
+        return Response({
+            "success": True,
+            "data": AdminBedSerializer(bed).data,
+        })
+
+
     @extend_schema(
         tags=["Beds Admin"],
         request=AdminBedSerializer,
@@ -102,26 +100,31 @@ class AdminBedDetailView(APIView):
         app_logger.info(
             f"Bed update {bed_id} by {request.user.username}"
         )
+
+        bed_instance = get_object_or_404(Bed, id=bed_id)
+
         serializer = AdminBedSerializer(
+            instance=bed_instance,
             data=request.data
         )
-        serializer.is_valid(
-            raise_exception=True
-        )
+        serializer.is_valid(raise_exception=True)
+
         bed = update_bed(
             bed_id,
             serializer.validated_data,
             request.user,
         )
+
         audit_logger.info(
-            f"Bed updated {bed_id} by {request.user.username}"
+            f"Bed updated {bed.id} by {request.user.username}"
         )
-        return Response(
-            {
-                "success": True,
-                "data": AdminBedSerializer(bed).data,
-            }
-        )
+
+        return Response({
+            "success": True,
+            "data": AdminBedSerializer(bed).data,
+        })
+
+
     @extend_schema(
         tags=["Beds Admin"],
         responses=None,
@@ -130,17 +133,14 @@ class AdminBedDetailView(APIView):
         app_logger.info(
             f"Bed delete {bed_id} by {request.user.username}"
         )
-        delete_bed(
-            bed_id,
-            request.user,
-        )
+
+        delete_bed(bed_id, request.user)
+
         audit_logger.info(
             f"Bed deleted {bed_id} by {request.user.username}"
         )
-        return Response(
-            {
-                "success": True,
-                "message": "Bed deleted",
-            },
-            status=status.HTTP_204_NO_CONTENT,
-        )
+
+        return Response({
+            "success": True,
+            "message": "Bed deleted",
+        }, status=status.HTTP_204_NO_CONTENT)

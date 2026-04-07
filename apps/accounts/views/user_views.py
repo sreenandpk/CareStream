@@ -31,6 +31,7 @@ from apps.accounts.serializers.password_serializers import (
 )
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
+from apps.accounts.services.session_service import get_active_sessions
 @method_decorator(
     ratelimit(key="ip", rate="5/m", block=True),
     name="post",
@@ -46,16 +47,22 @@ class CreateUserView(APIView):
     permission_classes = [IsAdminOrSystemAdmin]
     def post(self, request):
         app_logger.info("Create user request")
-        serializer = CreateUserSerializer(
-            data=request.data
-        )
-        serializer.is_valid(
-            raise_exception=True
-        )
-        user = serializer.save()
-        audit_logger.info(
-            f"User created {user.username}"
-        )
+
+        serializer = CreateUserSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            user = serializer.save()
+
+        except Exception as e:
+            error_logger.error(f"User create error: {str(e)}")
+            return Response(
+                {"success": False, "error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        audit_logger.info(f"User created {user.username}")
+
         if user.email:
             try:
                 send_user_credentials(
@@ -64,9 +71,8 @@ class CreateUserView(APIView):
                     password=serializer.context.get("raw_password"),
                 )
             except Exception as e:
-                error_logger.error(
-                    f"Email error {str(e)}"
-                )
+                error_logger.error(f"Email error {str(e)}")
+
         return Response(
             {
                 "success": True,
@@ -87,19 +93,20 @@ class CreateUserView(APIView):
 )
 class UserListView(APIView):
     permission_classes = [IsAdminOrSystemAdmin]
+
     def get(self, request):
         app_logger.info("User list requested")
-        users = get_all_users()
-        serializer = UserListSerializer(
-            users,
-            many=True
-        )
-        return Response(
-            {
-                "success": True,
-                "data": serializer.data
-            }
-        )
+
+        role = request.query_params.get("role")  # 🔥 NEW
+
+        users = get_all_users(role=role)
+
+        serializer = UserListSerializer(users, many=True)
+
+        return Response({
+            "success": True,
+            "data": serializer.data
+        })
 @method_decorator(
     ratelimit(key="ip", rate="5/m", block=True),
     name="get",
@@ -118,14 +125,23 @@ class UserDetailView(APIView):
     permission_classes = [IsAdminOrSystemAdmin]
     def get(self, request, user_id):
         app_logger.info(f"User detail {user_id}")
-        user = get_user_by_id(user_id)
+
+        try:
+            user = get_user_by_id(user_id)
+
+        except Exception as e:
+            error_logger.error(f"User fetch error: {str(e)}")
+            return Response(
+                {"success": False, "error": str(e)},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
         serializer = UserListSerializer(user)
-        return Response(
-            {
-                "success": True,
-                "data": serializer.data
-            }
-        )
+
+        return Response({
+            "success": True,
+            "data": serializer.data
+        })
 @method_decorator(
     ratelimit(key="ip", rate="5/m", block=True),
     name="put",
@@ -145,26 +161,33 @@ class UserUpdateView(APIView):
     permission_classes = [IsAdminOrSystemAdmin]
     def put(self, request, user_id):
         app_logger.info(f"User update {user_id}")
-        user = get_user_by_id(user_id)
-        serializer = UserUpdateSerializer(
-            user,
-            data=request.data,
-            partial=True
-        )
-        serializer.is_valid(
-            raise_exception=True
-        )
-        serializer.save()
-        audit_logger.info(
-            f"User updated {user.username}"
-        )
-        return Response(
-            {
-                "success": True,
-                "message": "User updated",
-                "data": serializer.data
-            }
-        )
+
+        try:
+            user = get_user_by_id(user_id)
+
+            serializer = UserUpdateSerializer(
+                user,
+                data=request.data,
+                partial=True
+            )
+
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+
+        except Exception as e:
+            error_logger.error(f"User update error: {str(e)}")
+            return Response(
+                {"success": False, "error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        audit_logger.info(f"User updated {user.username}")
+
+        return Response({
+            "success": True,
+            "message": "User updated",
+            "data": serializer.data
+        })
 @method_decorator(
     ratelimit(key="ip", rate="5/m", block=True),
     name="patch",
@@ -371,15 +394,23 @@ class UnlockUserView(APIView):
 )
 class OnlineUsersView(APIView):
     permission_classes = [IsAdminOrSystemAdmin]
+
     def get(self, request):
-        sessions = get_active_sessions()
-        serializer = SessionSerializer(
-            sessions,
-            many=True
-        )
-        return Response(
-            {
-                "success": True,
-                "online_users": serializer.data,
-            }
-        )
+        app_logger.info("Online users requested")
+
+        try:
+            sessions = get_active_sessions()
+
+            serializer = SessionSerializer(sessions, many=True)
+
+        except Exception as e:
+            error_logger.error(f"Session error: {str(e)}")
+            return Response(
+                {"success": False, "error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        return Response({
+            "success": True,
+            "online_users": serializer.data,
+        })

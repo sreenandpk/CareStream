@@ -1,50 +1,55 @@
 import logging
+from django.shortcuts import get_object_or_404
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from drf_spectacular.utils import extend_schema
 from rest_framework.permissions import IsAuthenticated
-from apps.core.role_permissions import (
-    IsAdminOrSystemAdmin,
-)
-from apps.rooms.serializers.admin_serializers import (
-    AdminRoomSerializer,
-)
+from drf_spectacular.utils import extend_schema
+
+from apps.core.role_permissions import IsAdminOrSystemAdmin
+from apps.rooms.models import Room
+from apps.rooms.serializers.admin_serializers import AdminRoomSerializer
 from apps.rooms.services.room_service import (
     get_all_rooms,
-    get_room_by_id,
     create_room,
     update_room,
     delete_room,
 )
+
 app_logger = logging.getLogger("app")
 audit_logger = logging.getLogger("audit")
 error_logger = logging.getLogger("django.request")
+
+
+# 🔹 LIST + CREATE
 class AdminRoomListCreateView(APIView):
-    permission_classes = [
-        IsAuthenticated,
-        IsAdminOrSystemAdmin,
-    ]
+    permission_classes = [IsAuthenticated, IsAdminOrSystemAdmin]
+
     @extend_schema(
         tags=["Rooms Admin"],
         responses=AdminRoomSerializer(many=True),
     )
     def get(self, request):
-
         app_logger.info(
             f"Room list requested by {request.user.username}"
         )
-        rooms = get_all_rooms()
-        serializer = AdminRoomSerializer(
-            rooms,
-            many=True,
+
+        # ✅ PERFORMANCE OPTIMIZATION
+        rooms = (
+            get_all_rooms()
+            .select_related("ward")        # FK
+            .prefetch_related("beds")      # reverse FK
         )
-        return Response(
-            {
-                "success": True,
-                "data": serializer.data,
-            }
-        )
+
+        serializer = AdminRoomSerializer(rooms, many=True)
+
+        return Response({
+            "success": True,
+            "data": serializer.data,
+        })
+
+
     @extend_schema(
         tags=["Rooms Admin"],
         request=AdminRoomSerializer,
@@ -54,19 +59,19 @@ class AdminRoomListCreateView(APIView):
         app_logger.info(
             f"Create room request by {request.user.username}"
         )
-        serializer = AdminRoomSerializer(
-            data=request.data
-        )
-        serializer.is_valid(
-            raise_exception=True
-        )
+
+        serializer = AdminRoomSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
         room = create_room(
             serializer.validated_data,
             request.user,
         )
+
         audit_logger.info(
             f"Room created {room.id} by {request.user.username}"
         )
+
         return Response(
             {
                 "success": True,
@@ -74,11 +79,12 @@ class AdminRoomListCreateView(APIView):
             },
             status=status.HTTP_201_CREATED,
         )
+
+
+# 🔹 DETAIL / UPDATE / DELETE
 class AdminRoomDetailView(APIView):
-    permission_classes = [
-        IsAuthenticated,
-        IsAdminOrSystemAdmin,
-    ]
+    permission_classes = [IsAuthenticated, IsAdminOrSystemAdmin]
+
     @extend_schema(
         tags=["Rooms Admin"],
         responses=AdminRoomSerializer,
@@ -87,13 +93,21 @@ class AdminRoomDetailView(APIView):
         app_logger.info(
             f"Room detail {room_id} by {request.user.username}"
         )
-        room = get_room_by_id(room_id)
-        return Response(
-            {
-                "success": True,
-                "data": AdminRoomSerializer(room).data,
-            }
+
+        # ✅ OPTIMIZED FETCH
+        room = get_object_or_404(
+            Room.objects.select_related("ward").prefetch_related("beds"),
+            id=room_id
         )
+
+        serializer = AdminRoomSerializer(room)
+
+        return Response({
+            "success": True,
+            "data": serializer.data,
+        })
+
+
     @extend_schema(
         tags=["Rooms Admin"],
         request=AdminRoomSerializer,
@@ -103,26 +117,32 @@ class AdminRoomDetailView(APIView):
         app_logger.info(
             f"Room update {room_id} by {request.user.username}"
         )
+
+        # ✅ LOAD INSTANCE (IMPORTANT FIX)
+        room_instance = get_object_or_404(Room, id=room_id)
+
         serializer = AdminRoomSerializer(
-            data=request.data
+            instance=room_instance,
+            data=request.data,
         )
-        serializer.is_valid(
-            raise_exception=True
-        )
+        serializer.is_valid(raise_exception=True)
+
         room = update_room(
             room_id,
             serializer.validated_data,
             request.user,
         )
+
         audit_logger.info(
-            f"Room updated {room_id} by {request.user.username}"
+            f"Room updated {room.id} by {request.user.username}"
         )
-        return Response(
-            {
-                "success": True,
-                "data": AdminRoomSerializer(room).data,
-            }
-        )
+
+        return Response({
+            "success": True,
+            "data": AdminRoomSerializer(room).data,
+        })
+
+
     @extend_schema(
         tags=["Rooms Admin"],
         responses=None,
@@ -131,13 +151,13 @@ class AdminRoomDetailView(APIView):
         app_logger.info(
             f"Room delete {room_id} by {request.user.username}"
         )
-        delete_room(
-            room_id,
-            request.user,
-        )
+
+        delete_room(room_id, request.user)
+
         audit_logger.info(
             f"Room deleted {room_id} by {request.user.username}"
         )
+
         return Response(
             {
                 "success": True,

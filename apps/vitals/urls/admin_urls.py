@@ -5,11 +5,11 @@ from apps.vitals.views.admin_views import (
 )
 urlpatterns = [
     path(
-        "admin/vitals/",
+        "vitals/",
         AdminVitalListCreateView.as_view(),
     ),
     path(
-        "admin/vitals/<int:vital_id>/",
+        "vitals/<int:vital_id>/",
         AdminVitalDetailView.as_view(),
     ),
 ]

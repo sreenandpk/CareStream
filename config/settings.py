@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     "django_ratelimit",
     "drf_spectacular",
+    "channels",
     # Local apps
     "apps.wards",
     "apps.rooms",
@@ -51,10 +52,10 @@ INSTALLED_APPS = [
     "apps.patients",
     "apps.vitals",
     "apps.alerts",
-    "apps.ai_engine",
     "apps.devices",
     "apps.accounts",
     "apps.core",
+    "apps.simulation",
 ]
 
 # =====================
@@ -71,8 +72,10 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django_ratelimit.middleware.RatelimitMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
 ]
-
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 # =====================
 # CORS
 # =====================
@@ -317,5 +320,31 @@ SPECTACULAR_SETTINGS = {
             "scheme": "bearer",
             "bearerFormat": "JWT",
         }
+    },
+}
+CELERY_BROKER_URL = "redis://127.0.0.1:6379/0"
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_BACKEND = "redis://127.0.0.1:6379/0"
+
+
+from celery.schedules import crontab
+
+CELERY_BEAT_SCHEDULE = {
+    "run-simulation-every-5-seconds": {
+        "task": "apps.simulation.tasks.run_simulation",
+        "schedule": 5.0,
+    },
+}
+# 🔥 ADD THIS
+ASGI_APPLICATION = "config.asgi.application"
+
+# 🔥 CHANNEL LAYERS (USE REDIS)
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
     },
 }

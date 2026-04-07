@@ -5,11 +5,11 @@ from apps.beds.views.admin_views import (
 )
 urlpatterns = [
     path(
-        "admin/beds/",
+        "beds/",
         AdminBedListCreateView.as_view(),
     ),
     path(
-        "admin/beds/<int:bed_id>/",
+        "beds/<int:bed_id>/",
         AdminBedDetailView.as_view(),
     ),
 ]

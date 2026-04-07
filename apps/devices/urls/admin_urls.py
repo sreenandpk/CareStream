@@ -5,11 +5,11 @@ from apps.devices.views.admin_views import (
 )
 urlpatterns = [
     path(
-        "admin/devices/",
+        "devices/",
         AdminDeviceListCreateView.as_view(),
     ),
     path(
-        "admin/devices/<int:device_id>/",
+        "devices/<int:device_id>/",
         AdminDeviceDetailView.as_view(),
     ),
 ]

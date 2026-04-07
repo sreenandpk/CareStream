@@ -19,6 +19,7 @@ class PatientAdminForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        # 🔥 Only available beds
         qs = Bed.objects.filter(
             status="AVAILABLE",
             is_deleted=False,
@@ -27,7 +28,7 @@ class PatientAdminForm(forms.ModelForm):
             "room__ward",
         )
 
-        # ✅ FIX HERE
+        # 🔥 If editing, allow current bed also
         if self.instance and self.instance.bed_id:
             qs = Bed.objects.filter(
                 is_deleted=False
@@ -45,7 +46,6 @@ class PatientAdminForm(forms.ModelForm):
         bed = cleaned_data.get("bed")
 
         if bed:
-
             qs = Patient.objects.filter(
                 bed=bed,
                 is_deleted=False,
@@ -61,6 +61,7 @@ class PatientAdminForm(forms.ModelForm):
 
         return cleaned_data
 
+
 # =========================
 # Admin
 # =========================
@@ -70,42 +71,52 @@ class PatientAdmin(admin.ModelAdmin):
 
     form = PatientAdminForm
 
+    # 🔥 LIST VIEW
     list_display = (
         "id",
         "name",
         "age",
         "gender",
         "bed",
+        "doctor",   # 🔥 NEW
+        "mode",     # 🔥 NEW
+        "is_active",
         "admission_date",
-        "discharge_date",
     )
 
+    # 🔥 SEARCH
     search_fields = (
         "name",
     )
 
+    # 🔥 FILTERS
     list_filter = (
         "gender",
+        "mode",      # 🔥 NEW
+        "doctor",    # 🔥 NEW
         "admission_date",
         "bed",
     )
 
-    ordering = (
-        "-admission_date",
-    )
+    # 🔥 ORDER
+    ordering = ("-admission_date",)
 
+    # 🔥 PERFORMANCE
     list_select_related = (
         "bed",
         "bed__room",
         "bed__room__ward",
+        "doctor",   # 🔥 NEW
     )
 
+    # 🔥 READ ONLY
     readonly_fields = (
         "created_at",
         "updated_at",
         "admission_date",
     )
 
+    # 🔥 FORM LAYOUT
     fieldsets = (
 
         ("Patient Information", {
@@ -117,9 +128,11 @@ class PatientAdmin(admin.ModelAdmin):
             )
         }),
 
-        ("Bed Assignment", {
+        ("Assignment", {   # 🔥 UPDATED
             "fields": (
                 "bed",
+                "doctor",   # 🔥 NOW VISIBLE
+                "mode",     # 🔥 NOW VISIBLE
             )
         }),
 
@@ -127,6 +140,7 @@ class PatientAdmin(admin.ModelAdmin):
             "fields": (
                 "admission_date",
                 "discharge_date",
+                "is_active",
             )
         }),
 
@@ -138,26 +152,13 @@ class PatientAdmin(admin.ModelAdmin):
         }),
     )
 
-    # hide soft deleted
+    # 🔥 HIDE SOFT DELETED
     def get_queryset(self, request):
-
         qs = super().get_queryset(request)
+        return qs.filter(is_deleted=False)
 
-        return qs.filter(
-            is_deleted=False
-        )
-
-    # lock after discharge
-    def has_change_permission(
-        self,
-        request,
-        obj=None,
-    ):
-
+    # 🔥 LOCK AFTER DISCHARGE
+    def has_change_permission(self, request, obj=None):
         if obj and obj.discharge_date:
             return False
-
-        return super().has_change_permission(
-            request,
-            obj,
-        )
+        return super().has_change_permission(request, obj)
