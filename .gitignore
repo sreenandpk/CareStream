@@ -3,48 +3,69 @@
 # =========================
 .env
 .env.*
-Backend/.env
-Frontend/.env
+*.env
 
 # =========================
 # 🐍 Backend (Django)
 # =========================
-Backend/__pycache__/
-Backend/**/*.py[cod]
+backend/__pycache__/
+backend/**/*.py[cod]
 
-Backend/venv/
-Backend/env/
-Backend/.venv/
+backend/venv/
+backend/env/
+backend/.venv/
 
-Backend/*.log
-Backend/db.sqlite3
-Backend/db.sqlite3-journal
+backend/*.log
+backend/db.sqlite3
+backend/db.sqlite3-journal
 
-Backend/staticfiles/
-Backend/media/
-
-# =========================
-# ⚛️ Frontend (React)
-# =========================
-Frontend/node_modules/
-Frontend/build/
-Frontend/dist/
-
-Frontend/.env
-Frontend/.env.*
+backend/staticfiles/
+backend/media/
 
 # =========================
 # ⚙️ Celery / Redis
 # =========================
-Backend/celerybeat-schedule*
-Backend/celerybeat.pid
+backend/celerybeat-schedule*
+backend/celerybeat.pid
 
 # =========================
 # 🧪 Testing / Coverage
 # =========================
-Backend/.coverage
-Backend/htmlcov/
-Backend/.pytest_cache/
+backend/.coverage
+backend/htmlcov/
+backend/.pytest_cache/
+
+# =========================
+# ⚛️ Frontend (Next.js)
+# =========================
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/dist/
+
+frontend/.env
+frontend/.env.*
+
+# =========================
+# 📦 Package managers
+# =========================
+node_modules/
+.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# =========================
+# 🧾 Logs
+# =========================
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
 
 # =========================
 # 💻 OS Files
@@ -61,6 +82,13 @@ Thumbs.db
 # =========================
 # 📦 Build / Distribution
 # =========================
-Backend/build/
-Backend/dist/
-Backend/*.egg-info/
+build/
+dist/
+*.egg-info/
+*.tsbuildinfo
+next-env.d.ts
+
+# =========================
+# 🚀 Deployment
+# =========================
+.vercel
