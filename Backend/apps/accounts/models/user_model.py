@@ -4,7 +4,6 @@ from django.db import models
 
 class User(AbstractUser):
     ROLE_CHOICES = [
-        ("SYSTEM_ADMIN", "System Admin"),
         ("ADMIN", "Admin"),
         ("DOCTOR", "Doctor"),
         ("NURSE", "Nurse"),
@@ -26,6 +25,8 @@ class User(AbstractUser):
         db_index=True,
     )
 
+    active_connections = models.PositiveIntegerField(default=0)
+
     # 🔥 ADD THIS (ONLY NEW THINGS YOU NEED)
     specialization = models.CharField(
         max_length=100,
@@ -37,6 +38,19 @@ class User(AbstractUser):
         max_length=100,
         blank=True,
         null=True
+    )
+
+    # 📧 Professional Email Tracking
+    EMAIL_STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("valid", "Valid"),
+        ("invalid", "Invalid"),
+    ]
+    email_status = models.CharField(
+        max_length=10,
+        choices=EMAIL_STATUS_CHOICES,
+        default="pending",
+        db_index=True,
     )
 
     # 🔐 EXISTING (KEEP SAME)
@@ -73,7 +87,7 @@ class User(AbstractUser):
         if self.is_superuser:
             self.is_staff = True
             self.is_verified = True
-            self.role = "SYSTEM_ADMIN"
+            self.role = "ADMIN"
         super().save(*args, **kwargs)
 
     def __str__(self):

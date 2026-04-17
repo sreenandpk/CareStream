@@ -11,7 +11,7 @@ from apps.accounts.models import User
 class JWTAuthMiddleware(BaseMiddleware):
 
     async def __call__(self, scope, receive, send):
-
+        print(f"DEBUG: JWTAuthMiddleware received connection request to {scope.get('path')}")
         query_string = scope.get("query_string").decode()
         query_params = parse_qs(query_string)
 
@@ -19,8 +19,12 @@ class JWTAuthMiddleware(BaseMiddleware):
 
         if token:
             token = token[0]
+            # Strip 'Bearer ' if it was accidentally included
+            if token.startswith("Bearer "):
+                token = token.split(" ")[1]
 
             try:
+                # Basic validation
                 UntypedToken(token)
 
                 decoded_data = jwt_decode(
@@ -29,13 +33,21 @@ class JWTAuthMiddleware(BaseMiddleware):
                     algorithms=["HS256"]
                 )
 
-                user = await User.objects.aget(id=decoded_data["user_id"])
+                # 🛡️ Resilient Extraction: Try common user ID claims
+                user_id = decoded_data.get("user_id") or decoded_data.get("id") or decoded_data.get("sub")
+                
+                if not user_id:
+                    print(f"DEBUG: WebSocket Auth Fail -> No user ID found in token claims: {decoded_data.keys()}")
+                    scope["user"] = AnonymousUser()
+                    return await self.inner(scope, receive, send)
+
+                user = await User.objects.aget(id=user_id)
                 scope["user"] = user
 
             except Exception as e:
-                print("JWT ERROR:", e)
+                print(f"DEBUG: WebSocket Auth Error -> {str(e)}")
                 scope["user"] = AnonymousUser()
         else:
             scope["user"] = AnonymousUser()
 
-        return await super().__call__(scope, receive, send)
+        return await self.inner(scope, receive, send)

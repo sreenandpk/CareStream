@@ -14,31 +14,48 @@ class LoginSerializer(serializers.Serializer):
                 "Username and password required"
             )
         try:
-            user = User.objects.get(
-                username=username
-            )
+            # Check if it's a username or email
+            if "@" in username:
+                user = User.objects.get(email=username)
+            else:
+                user = User.objects.get(username=username)
         except User.DoesNotExist:
             raise serializers.ValidationError(
                 "Invalid credentials"
             )
-        if not user.is_active:
-            raise serializers.ValidationError(
-                "User inactive"
-            )
+
         if user.is_locked:
             raise serializers.ValidationError(
-                "Account locked. Contact admin."
+                "Account locked due to multiple failed attempts. Please contact support."
             )
+
         if not user.check_password(password):
-            if user.role != "SYSTEM_ADMIN":
+            if user.role != "ADMIN":
                 user.failed_login_attempts += 1
+                remaining = 5 - user.failed_login_attempts
+                
                 if user.failed_login_attempts >= 5:
                     user.is_locked = True
+                    user.save()
+                    raise serializers.ValidationError(
+                        "Account locked due to multiple failed attempts. Please contact support."
+                    )
+                
                 user.save()
+                raise serializers.ValidationError(
+                    f"Invalid credentials. {remaining} attempts remaining before account lock."
+                )
+            
             raise serializers.ValidationError(
                 "Invalid credentials"
             )
-        if user.role != "SYSTEM_ADMIN":
+
+        if not user.is_active:
+            raise serializers.ValidationError(
+                "User account is inactive. Please contact your administrator."
+            )
+
+        if user.role != "ADMIN":
             user.failed_login_attempts = 0
             user.save()
         attrs["user"] = user

@@ -5,6 +5,8 @@ from datetime import timedelta
 class OTP(models.Model):
     TYPE_CHOICES = [
         ("LOGIN", "Login"),
+        ("RESET", "Reset Password"),
+        ("EMAIL_CHANGE", "Email Change Verification"),
     ]
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -17,7 +19,7 @@ class OTP(models.Model):
         db_index=True,
     )
     otp_type = models.CharField(
-        max_length=10,
+        max_length=20,
         choices=TYPE_CHOICES,
     )
     is_used = models.BooleanField(

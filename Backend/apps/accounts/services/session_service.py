@@ -1,4 +1,6 @@
 from apps.accounts.models import UserSession
+from django.utils import timezone
+from datetime import timedelta
 def create_session(
     request,
     user,
@@ -6,13 +8,17 @@ def create_session(
 ):
     ip = request.META.get("REMOTE_ADDR")
     agent = request.META.get("HTTP_USER_AGENT")
-    UserSession.objects.create(
-        user=user,
-        token=token,
-        ip_address=ip,
-        user_agent=agent,
-        is_active=True,
-    )
+    try:
+        UserSession.objects.create(
+            user=user,
+            token=token,
+            ip_address=ip,
+            user_agent=agent,
+            is_active=True,
+        )
+    except Exception as e:
+        import logging
+        logging.getLogger("app").error(f"Session creation error: {str(e)}")
 def close_session(token):
     try:
         session = UserSession.objects.get(
@@ -39,6 +45,10 @@ def force_logout_all():
         s.is_active = False
         s.save()
 def get_active_sessions():
+    # 🕒 12-hour Visibility Window
+    # Extend cutoff to 12 hours to accommodate standard work shifts and prevent 'Ghosting'
+    cutoff = timezone.now() - timedelta(hours=12)
     return UserSession.objects.filter(
-        is_active=True
+        is_active=True,
+        login_time__gte=cutoff
     ).select_related("user")

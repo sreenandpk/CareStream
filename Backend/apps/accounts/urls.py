@@ -25,6 +25,8 @@ from apps.accounts.views.session_views import (
     ForceLogoutUserView,
     ForceLogoutAllView,
 )
+from apps.accounts.views.dashboard_stats_view import DashboardStatsView
+
 urlpatterns = [
     path("login/", LoginView.as_view()),
     path("verify-otp/", VerifyOTPView.as_view()),
@@ -44,4 +46,5 @@ urlpatterns = [
     path("sessions/force-logout/<int:user_id>/", ForceLogoutUserView.as_view()),
     path("sessions/force-logout-all/", ForceLogoutAllView.as_view()),
     path("online-users/", OnlineUsersView.as_view()),
+    path("dashboard-stats/", DashboardStatsView.as_view()),
 ]
