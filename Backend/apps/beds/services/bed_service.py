@@ -3,10 +3,11 @@ from rest_framework.exceptions import (
     ValidationError,
 )
 from apps.beds.models import Bed
-def get_all_beds():
-    return Bed.objects.all().order_by(
-        "bed_number"
-    )
+def get_all_beds(room_id=None):
+    queryset = Bed.objects.all().order_by("bed_number")
+    if room_id:
+        queryset = queryset.filter(room_id=room_id)
+    return queryset
 def get_bed_by_id(bed_id):
     try:
         return Bed.objects.get(id=bed_id)

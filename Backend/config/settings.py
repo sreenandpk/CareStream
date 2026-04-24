@@ -378,9 +378,21 @@ CELERY_RESULT_BACKEND = "redis://127.0.0.1:6379/0"
 from celery.schedules import crontab
 
 CELERY_BEAT_SCHEDULE = {
-    "run-simulation-every-5-seconds": {
+    "high-frequency-simulation-1s": {
         "task": "apps.simulation.tasks.run_simulation",
-        "schedule": 5.0,
+        "schedule": 1.0,
+    },
+    "archive-hot-vitals-10m": {
+        "task": "apps.vitals.tasks.archive_hot_vitals",
+        "schedule": 600.0, # Every 10 minutes
+    },
+    "summarize-warm-vitals-1h": {
+        "task": "apps.vitals.tasks.summarize_warm_vitals",
+        "schedule": 3600.0, # Every hour
+    },
+    "cleanup-cold-data-24h": {
+        "task": "apps.vitals.tasks.cleanup_cold_data",
+        "schedule": 86400.0, # Daily
     },
 }
 # 🔥 ADD THIS

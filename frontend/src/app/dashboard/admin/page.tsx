@@ -36,7 +36,13 @@ export default function AdminDashboard() {
         total_users: 0,
         active_staff: 0,
         security_alerts: 0,
-        auth_blocks: 0,
+        total_patients: 0,
+        occupied_beds: 0,
+        total_beds: 0,
+        active_crises: 0,
+        total_devices: 0,
+        active_simulators: 0,
+        real_hardware: 0,
         system_health: "100.0"
     });
     const [loadingStats, setLoadingStats] = useState(true);
@@ -53,7 +59,7 @@ export default function AdminDashboard() {
         setLoadingLogs(true);
         try {
             const response = await api.get("core/logs/audit.log/", {
-                params: { page: 1, page_size: 5 }
+                params: { page: 1, page_size: 8 }
             });
             setLogs(response.data.lines);
         } catch (err) {
@@ -81,6 +87,10 @@ export default function AdminDashboard() {
         if (_hasHydrated && user && user.role === "ADMIN") {
             fetchStats();
             fetchRecentLogs();
+            
+            // Refresh stats every 30 seconds for real-time feel
+            const interval = setInterval(fetchStats, 30000);
+            return () => clearInterval(interval);
         }
     }, [user, _hasHydrated]);
 
@@ -88,76 +98,150 @@ export default function AdminDashboard() {
 
     return (
         <DashboardShell>
-            <div className="p-8 space-y-8 min-h-full">
+            <div className="p-8 space-y-10 min-h-full max-w-[1600px] mx-auto">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-4xl font-extrabold tracking-tight">System Overview</h1>
-                        <p className="text-zinc-500 mt-2 font-medium italic">Unified Command for CareStream Infrastructure & Clinical Safety.</p>
+                        <div className="flex items-center gap-2 mb-1">
+                            <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse" />
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500/80 italic">Unified Command Active</span>
+                        </div>
+                        <h1 className="text-5xl font-black tracking-tighter uppercase text-zinc-100 italic">
+                            System <span className="text-rose-500">Overview</span>
+                        </h1>
+                        <p className="text-zinc-500 mt-2 font-medium italic opacity-80">Infrastructure & clinical safety monitoring for CareStream Core.</p>
                     </div>
                     <div className="flex gap-4">
                         <Button 
                             variant="outline" 
-                            className="bg-black/40 border-zinc-800 hover:bg-zinc-900"
+                            className="rounded-2xl bg-zinc-900/40 border-zinc-800 hover:bg-zinc-800 text-[10px] font-black uppercase tracking-widest px-6 h-12 transition-all"
                             onClick={() => router.push("/dashboard/admin/logs")}
                         >
-                            <Settings className="w-4 h-4 mr-2" />
+                            <Terminal className="w-4 h-4 mr-2 text-rose-500" />
                             Diagnostic Feed
                         </Button>
                     </div>
                 </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <Card className="bg-zinc-900/40 border-zinc-800/50 backdrop-blur-xl hover:border-zinc-700 transition-all cursor-pointer group">
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-bold text-zinc-400 uppercase tracking-wider">Staff & Community</CardTitle>
-                        <Users className="w-4 h-4 text-blue-500 group-hover:scale-110 transition-transform" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-3xl font-bold">
-                            {loadingStats ? "..." : stats.total_users}
-                        </div>
-                        <p className="text-xs text-zinc-500 mt-1">Total registered in CareStream</p>
-                    </CardContent>
-                </Card>
-                
-                <Card className="bg-zinc-900/40 border-zinc-800/50 backdrop-blur-xl hover:border-zinc-700 transition-all cursor-pointer group" onClick={() => router.push("/dashboard/admin/users")}>
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-bold text-zinc-400 uppercase tracking-wider">Caregivers Online</CardTitle>
-                        <ShieldAlert className="w-4 h-4 text-emerald-500 group-hover:scale-110 transition-transform" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-3xl font-bold">
-                            {loadingStats ? "..." : stats.active_staff}
-                        </div>
-                        <p className="text-xs text-zinc-500 mt-1">Active professional staff</p>
-                    </CardContent>
-                </Card>
+            {/* 🔥 SECTION 1: CLINICAL STABILITY */}
+            <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                    <span className="text-[10px] font-black tracking-[0.3em] uppercase text-zinc-600 italic">Clinical Stability Pulse</span>
+                    <div className="h-px flex-1 bg-zinc-900 border-b border-zinc-800/50" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <Card className="bg-rose-500/5 border-rose-500/10 backdrop-blur-3xl hover:border-rose-500/30 transition-all cursor-pointer group" onClick={() => router.push("/dashboard/admin/alerts")}>
+                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                            <CardTitle className="text-[10px] font-black text-rose-500 uppercase tracking-widest leading-none">Active Crises</CardTitle>
+                            <ShieldAlert className="w-4 h-4 text-rose-500 animate-pulse" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-4xl font-black text-zinc-100">
+                                {loadingStats ? "..." : (stats.active_crises ?? 0)}
+                            </div>
+                            <p className="text-[10px] font-bold text-zinc-500 mt-1 uppercase tracking-tight">Active Critical Alerts</p>
+                        </CardContent>
+                    </Card>
 
-                <Card className="bg-zinc-900/40 border-zinc-800/50 backdrop-blur-xl hover:border-zinc-700 transition-all cursor-pointer group">
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-bold text-zinc-400 uppercase tracking-wider">Active Safeguards</CardTitle>
-                        <Terminal className="w-4 h-4 text-rose-500 group-hover:scale-110 transition-transform" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-3xl font-bold">
-                            {loadingStats ? "..." : stats.security_alerts}
-                        </div>
-                        <p className="text-xs text-zinc-500 mt-1">Current security lockouts</p>
-                    </CardContent>
-                </Card>
+                    <Card className="bg-emerald-500/5 border-emerald-500/10 backdrop-blur-3xl hover:border-emerald-500/30 transition-all cursor-pointer group" onClick={() => router.push("/dashboard/admin/patients")}>
+                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                            <CardTitle className="text-[10px] font-black text-emerald-500 uppercase tracking-widest leading-none">Bed Occupancy</CardTitle>
+                            <Activity className="w-4 h-4 text-emerald-500" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-4xl font-black text-zinc-100">
+                                {loadingStats ? "..." : (stats.occupied_beds ?? 0)}<span className="text-zinc-700 text-lg">/{(stats.total_beds ?? 0)}</span>
+                            </div>
+                            <p className="text-[10px] font-bold text-zinc-500 mt-1 uppercase tracking-tight">Current Patient Density</p>
+                        </CardContent>
+                    </Card>
 
-                <Card className="bg-zinc-900/40 border-zinc-800/50 backdrop-blur-xl hover:border-zinc-700 transition-all cursor-pointer group">
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-bold text-zinc-400 uppercase tracking-wider">System Health</CardTitle>
-                        <Activity className="text-blue-500 w-4 h-4 group-hover:scale-110 transition-transform animate-pulse" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-3xl font-bold">
-                            {loadingStats ? "..." : stats.system_health}%
-                        </div>
-                        <p className="text-xs text-zinc-500 mt-1">Operational integrity</p>
-                    </CardContent>
-                </Card>
+                    <Card className="bg-zinc-900/40 border-zinc-800/50 backdrop-blur-3xl hover:border-zinc-700 transition-all cursor-pointer group" onClick={() => router.push("/dashboard/admin/patients")}>
+                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                            <CardTitle className="text-[10px] font-black text-zinc-500 uppercase tracking-widest leading-none">Historical Cases</CardTitle>
+                            <Users className="w-4 h-4 text-zinc-500" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-4xl font-black text-zinc-100">
+                                {loadingStats ? "..." : (stats.total_patients ?? 0)}
+                            </div>
+                            <p className="text-[10px] font-bold text-zinc-500 mt-1 uppercase tracking-tight">Total Admitted (Lifetime)</p>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="bg-blue-500/5 border-blue-500/10 backdrop-blur-3xl hover:border-blue-500/30 transition-all cursor-pointer group">
+                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                            <CardTitle className="text-[10px] font-black text-blue-500 uppercase tracking-widest leading-none">Security Mask</CardTitle>
+                            <Shield className="w-4 h-4 text-blue-500" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-4xl font-black text-zinc-100">
+                                {loadingStats ? "..." : (stats.security_alerts ?? 0)}
+                            </div>
+                            <p className="text-[10px] font-bold text-zinc-500 mt-1 uppercase tracking-tight">Safeguard Lockouts</p>
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
+
+            {/* 🔥 SECTION 2: INFRASTRUCTURE INTEGRITY */}
+            <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                    <span className="text-[10px] font-black tracking-[0.3em] uppercase text-zinc-600 italic">Hardware & Staff Integrity</span>
+                    <div className="h-px flex-1 bg-zinc-900 border-b border-zinc-800/50" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <Card className="bg-zinc-900/40 border-zinc-800/50 backdrop-blur-xl hover:border-emerald-500/20 transition-all cursor-pointer group" onClick={() => router.push("/dashboard/admin/users")}>
+                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                            <CardTitle className="text-[10px] font-black text-zinc-400 uppercase tracking-widest leading-none">Clinical Staff</CardTitle>
+                            <UserCircle className="w-4 h-4 text-zinc-500 group-hover:text-emerald-500 transition-colors" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-3xl font-black text-zinc-100">
+                                {loadingStats ? "..." : (stats.active_staff ?? 0)}
+                            </div>
+                            <p className="text-[10px] font-bold text-zinc-600 mt-1 uppercase tracking-tight italic">Authenticated & Online</p>
+                        </CardContent>
+                    </Card>
+                    
+                    <Card className="bg-zinc-900/40 border-zinc-800/50 backdrop-blur-xl hover:border-rose-500/20 transition-all cursor-pointer group" onClick={() => router.push("/dashboard/admin/devices")}>
+                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                            <CardTitle className="text-[10px] font-black text-zinc-400 uppercase tracking-widest leading-none">Live Simulators</CardTitle>
+                            <Server className="w-4 h-4 text-rose-400/50 group-hover:text-rose-500 transition-colors" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-3xl font-black text-zinc-100">
+                                {loadingStats ? "..." : (stats.active_simulators ?? 0)}
+                            </div>
+                            <p className="text-[10px] font-bold text-zinc-600 mt-1 uppercase tracking-tight italic">Synthetic Engine Units</p>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="bg-zinc-900/40 border-zinc-800/50 backdrop-blur-xl hover:border-blue-500/20 transition-all cursor-pointer group">
+                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                            <CardTitle className="text-[10px] font-black text-zinc-400 uppercase tracking-widest leading-none">Fleet Integrity</CardTitle>
+                            <RefreshCw className="w-4 h-4 text-blue-400/50 group-hover:text-blue-500 transition-colors" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-3xl font-black text-zinc-100">
+                                {loadingStats ? "..." : (stats.total_devices ?? 0)}
+                            </div>
+                            <p className="text-[10px] font-bold text-zinc-600 mt-1 uppercase tracking-tight italic">Total Registered Hardware</p>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="bg-emerald-500/[0.02] border-emerald-500/10 backdrop-blur-xl border-dashed">
+                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                            <CardTitle className="text-[10px] font-black text-emerald-500/70 uppercase tracking-widest leading-none">System Health</CardTitle>
+                            <Activity className="text-emerald-500/30 w-4 h-4 animate-pulse" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-3xl font-black text-zinc-100 tracking-tighter italic">
+                                {loadingStats ? "..." : (stats.system_health ?? "100.0")}%
+                            </div>
+                            <p className="text-[10px] font-bold text-zinc-600 mt-1 uppercase tracking-tight italic">Operational Normality</p>
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
 
             <div className="mt-10">

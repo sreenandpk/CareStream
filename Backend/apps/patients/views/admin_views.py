@@ -69,14 +69,20 @@ class AdminPatientListCreateView(APIView):
 
         except ValidationError as e:
             return Response(
-                {"success": False, "error": e.detail},
+                {
+                    "success": False, 
+                    "message": str(e.detail[0]) if isinstance(e.detail, list) else str(e.detail)
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         except Exception as e:
             error_logger.error(f"Patient create error: {str(e)}")
             return Response(
-                {"success": False, "error": str(e)},
+                {
+                    "success": False, 
+                    "message": str(e)
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -116,7 +122,7 @@ class AdminPatientDetailView(APIView):
         except Exception as e:
             error_logger.error(f"Patient fetch error: {str(e)}")
             return Response(
-                {"success": False, "error": str(e)},
+                {"success": False, "message": str(e)},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
@@ -136,8 +142,17 @@ class AdminPatientDetailView(APIView):
             f"Patient update {patient_id} by {request.user.username}"
         )
 
-        # 🔥 partial=True (IMPORTANT)
+        try:
+            patient_instance = get_patient_by_id(patient_id)
+        except Exception as e:
+            return Response(
+                {"success": False, "message": "Patient not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # 🔥 Pass instance for correct validation (exclude self)
         serializer = AdminPatientSerializer(
+            patient_instance,
             data=request.data,
             partial=True
         )
@@ -153,14 +168,20 @@ class AdminPatientDetailView(APIView):
 
         except ValidationError as e:
             return Response(
-                {"success": False, "error": e.detail},
+                {
+                    "success": False, 
+                    "message": str(e.detail[0]) if isinstance(e.detail, list) else str(e.detail)
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         except Exception as e:
             error_logger.error(f"Patient update error: {str(e)}")
             return Response(
-                {"success": False, "error": str(e)},
+                {
+                    "success": False, 
+                    "message": str(e)
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -189,7 +210,10 @@ class AdminPatientDetailView(APIView):
         except Exception as e:
             error_logger.error(f"Patient delete error: {str(e)}")
             return Response(
-                {"success": False, "error": str(e)},
+                {
+                    "success": False, 
+                    "message": str(e)
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 

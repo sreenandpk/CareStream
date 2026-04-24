@@ -3,13 +3,17 @@ from apps.alerts.models import Alert
 
 
 class AdminAlertSerializer(serializers.ModelSerializer):
+    patient_name = serializers.CharField(source="patient.name", read_only=True, allow_null=True)
+    device_serial = serializers.CharField(source="device.serial_number", read_only=True)
 
     class Meta:
         model = Alert
         fields = [
             "id",
             "device",
+            "device_serial",
             "patient",
+            "patient_name",
             "vital",
             "doctor",
             "alert_type",

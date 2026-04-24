@@ -8,8 +8,11 @@ from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.utils import extend_schema
 
 from apps.core.role_permissions import IsAdminOrSystemAdmin
+from apps.core.pagination import StandardResultsSetPagination
 from apps.beds.models import Bed
 from apps.beds.serializers.admin_serializers import AdminBedSerializer
+
+from apps.core.role_permissions import IsAdminOrSystemAdmin
 from apps.beds.services.bed_service import (
     get_all_beds,
     create_bed,
@@ -19,10 +22,11 @@ from apps.beds.services.bed_service import (
 
 app_logger = logging.getLogger("app")
 audit_logger = logging.getLogger("audit")
-
+ministerial_logger = logging.getLogger("django.request")
 
 class AdminBedListCreateView(APIView):
     permission_classes = [IsAuthenticated, IsAdminOrSystemAdmin]
+    pagination_class = StandardResultsSetPagination
 
     @extend_schema(
         tags=["Beds Admin"],
@@ -31,18 +35,27 @@ class AdminBedListCreateView(APIView):
     def get(self, request):
         app_logger.info(f"Bed list requested by {request.user.username}")
 
+        room_id = request.query_params.get("room")
+        search_query = request.query_params.get('search', '')
+
         # ✅ PERFORMANCE
         beds = (
-            get_all_beds()
+            get_all_beds(room_id=room_id)
             .select_related("room__ward", "patient")   # deep FK
         )
 
-        serializer = AdminBedSerializer(beds, many=True)
+        if search_query:
+            from django.db.models import Q
+            beds = beds.filter(
+                Q(bed_number__icontains=search_query) |
+                Q(status__icontains=search_query)
+            )
 
-        return Response({
-            "success": True,
-            "data": serializer.data,
-        })
+        paginator = self.pagination_class()
+        result_page = paginator.paginate_queryset(beds, request)
+        serializer = AdminBedSerializer(result_page, many=True)
+
+        return paginator.get_paginated_response(serializer.data)
 
 
     @extend_schema(

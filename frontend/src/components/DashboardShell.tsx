@@ -19,9 +19,16 @@ import {
     ChevronRight,
     Users2,
     Terminal,
-    Map
+    Map,
+    LayoutGrid,
+    Bed,
+    Cpu,
+    BellRing
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
+import GlobalAlertOverlay from "@/components/alerts/GlobalAlertOverlay";
+import useAlertsSocket from "@/hooks/useAlertsSocket";
 
 interface DashboardShellProps {
     children: ReactNode;
@@ -33,6 +40,9 @@ export default function DashboardShell({ children }: DashboardShellProps) {
     const router = useRouter();
     const pathname = usePathname();
     const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+
+    // 🔥 Start global alert telemetry
+    useAlertsSocket();
 
     // CRITICAL: Wait for hydration before deciding the auth state.
     // If we haven't hydrated yet, we don't know if a user exists or not.
@@ -60,8 +70,14 @@ export default function DashboardShell({ children }: DashboardShellProps) {
     const navigation = [
         ...(isAdmin ? [
             { name: "Overview", href: "/dashboard/admin", icon: LayoutDashboard },
+            { name: "Live Vitals", href: "/dashboard/admin/vitals", icon: Activity },
+            { name: "Alert Center", href: "/dashboard/admin/alerts", icon: BellRing },
             { name: "User Directory", href: "/dashboard/admin/users", icon: Users },
+            { name: "Patient Directory", href: "/dashboard/admin/patients", icon: Users2 },
             { name: "Ward Management", href: "/dashboard/admin/wards", icon: Map },
+            { name: "Room Management", href: "/dashboard/admin/rooms", icon: LayoutGrid },
+            { name: "Bed Management", href: "/dashboard/admin/beds", icon: Bed },
+            { name: "Device Fleet", href: "/dashboard/admin/devices", icon: Cpu },
             { name: "System Logs", href: "/dashboard/admin/logs", icon: Server },
         ] : []),
         ...(isDoctor ? [
@@ -74,6 +90,9 @@ export default function DashboardShell({ children }: DashboardShellProps) {
 
     return (
         <div className="flex min-h-screen bg-zinc-950 text-white font-sans selection:bg-emerald-500/30">
+            {/* Global Alert System */}
+            <GlobalAlertOverlay />
+            
             {/* Sidebar */}
             <aside className="w-64 border-r border-zinc-900 bg-black/20 backdrop-blur-3xl flex flex-col sticky top-0 h-screen">
                 <div className="p-8">

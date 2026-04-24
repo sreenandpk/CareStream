@@ -1,4 +1,4 @@
-# URL Configuration - Reloaded at 2026-04-14 17:53
+# URL Configuration - Reloaded at 2026-04-23 11:15
 from django.contrib import admin
 from django.urls import path,include
 from drf_spectacular.views import (

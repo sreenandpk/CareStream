@@ -7,9 +7,11 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.utils import extend_schema
 
-from apps.core.role_permissions import IsAdminOrSystemAdmin
+from apps.core.pagination import StandardResultsSetPagination
 from apps.rooms.models import Room
 from apps.rooms.serializers.admin_serializers import AdminRoomSerializer
+
+from apps.core.role_permissions import IsAdminOrSystemAdmin
 from apps.rooms.services.room_service import (
     get_all_rooms,
     create_room,
@@ -21,10 +23,10 @@ app_logger = logging.getLogger("app")
 audit_logger = logging.getLogger("audit")
 error_logger = logging.getLogger("django.request")
 
-
 # 🔹 LIST + CREATE
 class AdminRoomListCreateView(APIView):
     permission_classes = [IsAuthenticated, IsAdminOrSystemAdmin]
+    pagination_class = StandardResultsSetPagination
 
     @extend_schema(
         tags=["Rooms Admin"],
@@ -35,19 +37,28 @@ class AdminRoomListCreateView(APIView):
             f"Room list requested by {request.user.username}"
         )
 
+        ward_id = request.query_params.get("ward")
+        search_query = request.query_params.get('search', '')
+
         # ✅ PERFORMANCE OPTIMIZATION
         rooms = (
-            get_all_rooms()
+            get_all_rooms(ward_id=ward_id)
             .select_related("ward")        # FK
             .prefetch_related("beds")      # reverse FK
         )
 
-        serializer = AdminRoomSerializer(rooms, many=True)
+        if search_query:
+            from django.db.models import Q
+            rooms = rooms.filter(
+                Q(room_number__icontains=search_query) |
+                Q(room_type__icontains=search_query)
+            )
 
-        return Response({
-            "success": True,
-            "data": serializer.data,
-        })
+        paginator = self.pagination_class()
+        result_page = paginator.paginate_queryset(rooms, request)
+        serializer = AdminRoomSerializer(result_page, many=True)
+
+        return paginator.get_paginated_response(serializer.data)
 
 
     @extend_schema(

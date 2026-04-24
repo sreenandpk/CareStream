@@ -1,5 +1,8 @@
 import json
+import logging
 from channels.generic.websocket import AsyncWebsocketConsumer
+
+logger = logging.getLogger(__name__)
 
 
 class VitalsConsumer(AsyncWebsocketConsumer):
@@ -11,7 +14,7 @@ class VitalsConsumer(AsyncWebsocketConsumer):
 
         # ❌ Reject if not authenticated
         if not user or not user.is_authenticated:
-            print("❌ Unauthorized Vitals WebSocket")
+            logger.warning("Vitals WebSocket: Unauthorized connection attempt.")
             await self.close()
             return
 
@@ -28,7 +31,7 @@ class VitalsConsumer(AsyncWebsocketConsumer):
 
         await self.accept()
 
-        print(f"✅ Vitals WS connected → {self.group_name}")
+        logger.info(f"Vitals WebSocket active: {self.group_name}")
 
     async def disconnect(self, close_code):
         if self.group_name:
@@ -38,4 +41,8 @@ class VitalsConsumer(AsyncWebsocketConsumer):
             )
 
     async def send_vital(self, event):
+        """
+        🚀 Telemetry Relay: Dispatches clinical frames to the client monitor.
+        """
+        logger.debug(f"Relaying VITAL_UPDATE frame to {self.group_name}")
         await self.send(text_data=json.dumps(event["data"]))

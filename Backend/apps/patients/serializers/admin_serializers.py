@@ -20,6 +20,17 @@ class AdminPatientSerializer(serializers.ModelSerializer):
         required=False
     )
 
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        # 🔥 Override mode with hardware state (Single Source of Truth)
+        try:
+            device = getattr(instance.bed, "device", None)
+            if device:
+                ret["mode"] = device.mode
+        except Exception:
+            pass
+        return ret
+
     class Meta:
         model = Patient
         fields = [

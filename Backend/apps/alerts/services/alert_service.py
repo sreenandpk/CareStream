@@ -1,120 +1,178 @@
-from apps.alerts.models import Alert
-
+import logging
+from datetime import timedelta
+from django.db import transaction
+from django.utils import timezone
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
+from apps.alerts.models import Alert
 
-from django.utils import timezone
-from datetime import timedelta
+logger = logging.getLogger("alerts")
 
 
+# 🔷 MASTER ENTRY POINT
 def check_and_create_alert(vital):
+    """
+    🚨 3-LAYER CLINICAL INTELLIGENCE ENGINE
+    Standardized Alert Flow: Resolve -> Detect -> Notify
+    """
+    # 🔥 Layer 0: Self-Healing (Auto-Resolve)
+    resolve_alerts(vital)
 
-    alerts = []
+    detections = []
 
-    # HEART RATE
-    if vital.heart_rate <= 40 or vital.heart_rate >= 150:
-        alerts.append(create_alert(
-            vital,
-            "HEART_RATE_CRITICAL",
-            f"Critical HR: {vital.heart_rate}",
-            Alert.Severity.CRITICAL
-        ))
+    # 🔥 Layer 1: Threshold Detection (Immediate)
+    detections.extend(_detect_thresholds(vital))
 
-    elif vital.heart_rate <= 50 or vital.heart_rate >= 120:
-        alerts.append(create_alert(
-            vital,
-            "HEART_RATE_ABNORMAL",
-            f"Abnormal HR: {vital.heart_rate}",
-            Alert.Severity.HIGH
-        ))
+    # 🔥 Layer 2: Pattern Detection (Instability)
+    detections.extend(_detect_patterns(vital))
 
-    # SPO2
-    if vital.spo2 <= 85:
-        alerts.append(create_alert(
-            vital,
-            "SPO2_CRITICAL",
-            f"Critical SpO2: {vital.spo2}",
-            Alert.Severity.CRITICAL
-        ))
+    # 🔥 Layer 3: Trend Detection (Gradual Shift)
+    detections.extend(_detect_trends(vital))
 
+    created_alerts = []
+    for d in detections:
+        alert = _safe_create_alert(vital, d['type'], d['msg'], d['severity'])
+        if alert:
+            created_alerts.append(alert)
+
+    return created_alerts
+
+
+# 🔷 LAYER 1: THRESHOLDS
+def _detect_thresholds(vital):
+    issues = []
+    
+    # Heart Rate
+    if vital.heart_rate >= 140 or vital.heart_rate <= 40:
+        issues.append({'type': 'HR_CRITICAL', 'msg': f'Critical HR: {vital.heart_rate}', 'severity': Alert.Severity.CRITICAL})
+    elif vital.heart_rate >= 120 or vital.heart_rate <= 50:
+        issues.append({'type': 'HR_ABNORMAL', 'msg': f'Abnormal HR: {vital.heart_rate}', 'severity': Alert.Severity.HIGH})
+
+    # SpO2
+    if vital.spo2 <= 88:
+        issues.append({'type': 'SPO2_CRITICAL', 'msg': f'Critical SpO2: {vital.spo2}', 'severity': Alert.Severity.CRITICAL})
     elif vital.spo2 <= 92:
-        alerts.append(create_alert(
-            vital,
-            "SPO2_LOW",
-            f"Low SpO2: {vital.spo2}",
-            Alert.Severity.HIGH
-        ))
+        issues.append({'type': 'SPO2_LOW', 'msg': f'Low SpO2: {vital.spo2}', 'severity': Alert.Severity.HIGH})
 
-    # TEMPERATURE
-    if vital.temperature >= 40:
-        alerts.append(create_alert(
-            vital,
-            "FEVER_CRITICAL",
-            f"Temp: {vital.temperature}",
-            Alert.Severity.CRITICAL
-        ))
-
+    # Fever
+    if vital.temperature >= 40.0:
+        issues.append({'type': 'TEMP_CRITICAL', 'msg': f'Critical Temp: {vital.temperature}', 'severity': Alert.Severity.CRITICAL})
     elif vital.temperature >= 38.5:
-        alerts.append(create_alert(
-            vital,
-            "FEVER",
-            f"Temp: {vital.temperature}",
-            Alert.Severity.MEDIUM
-        ))
+        issues.append({'type': 'TEMP_HIGH', 'msg': f'High Temp: {vital.temperature}', 'severity': Alert.Severity.MEDIUM})
 
-    return alerts
+    return issues
 
-def create_alert(vital, alert_type, message, severity):
 
-    existing = Alert.objects.filter(
-        patient=vital.patient,
-        alert_type=alert_type,
-        status=Alert.Status.ACTIVE,
-        created_at__gte=timezone.now() - timedelta(seconds=30)
-    ).first()
+# 🔷 LAYER 2: PATTERNS (Placeholder)
+def _detect_patterns(vital):
+    # Future: Detect Tachy-Brady cycles or SpO2 dips
+    return []
 
-    if existing:
-        print(f"⏳ Skipped duplicate alert: {alert_type}")
-        return existing
 
-    doctor = getattr(vital.patient, "doctor", None)
+# 🔷 LAYER 3: TRENDS (Placeholder)
+def _detect_trends(vital):
+    # Future: Detect gradual increase in HR over 5 mins
+    return []
 
-    alert = Alert.objects.create(
+
+# 🔷 AUTO-RESOLVE ENGINE
+def resolve_alerts(vital):
+    """
+    Autonomous clinical resolution with 10s stability guard.
+    """
+    active_alerts = Alert.objects.filter(
         device=vital.device,
-        patient=vital.patient,
-        vital=vital,
-        doctor=doctor,
-        alert_type=alert_type,
-        message=message,
-        severity=severity,
+        status=Alert.Status.ACTIVE
     )
 
-    print(f"🚨 ALERT CREATED: {alert.alert_type}")
+    for alert in active_alerts:
+        # 🛡️ STABILITY GUARD: Resolve only if alert is older than 10s
+        if alert.created_at > timezone.now() - timedelta(seconds=10):
+            continue
 
-    # 🔥 WEBSOCKET SEND (MULTI GROUP 🚀)
-    channel_layer = get_channel_layer()
+        resolved = False
+        
+        # Clinical Normalization Rules
+        if 'HR' in alert.alert_type and 50 < vital.heart_rate < 120:
+            resolved = True
+        elif 'SPO2' in alert.alert_type and vital.spo2 > 92:
+            resolved = True
+        elif 'TEMP' in alert.alert_type and vital.temperature < 38.0:
+            resolved = True
 
-    # 🔥 SEND TO MULTIPLE GROUPS
-    groups = ["alerts_admin"]  # admin always gets
+        if resolved:
+            alert.resolve()
+            send_alert_update(alert, "ALERT_RESOLVED")
+            logger.info(f"Clinical Resolution: Alert {alert.id} cleared.")
 
-    if doctor:
-        groups.append(f"alerts_doctor_{doctor.id}")
 
-    for group in groups:
-        async_to_sync(channel_layer.group_send)(
-            group,
-            {
-                "type": "send_alert",
-                "data": {
-                    "id": alert.id,
-                    "patient": alert.patient.name,
-                    "type": alert.alert_type,
-                    "severity": alert.severity,
-                    "message": alert.message,
-                }
+# 🔷 BROADCAST & NOTIFICATION
+def send_alert_update(alert, event_type):
+    """
+    Broadcasts clinical alerts via standardized Event Layer.
+    event_type: ALERT_CREATED | ALERT_RESOLVED
+    """
+    try:
+        channel_layer = get_channel_layer()
+        doctor_id = getattr(alert.patient.doctor, "id", None) if alert.patient else None
+        
+        groups = ["alerts_admin"]
+        if doctor_id:
+            groups.append(f"alerts_doctor_{doctor_id}")
+
+        broadcast_payload = {
+            "event": event_type,  # 🚨 PRODUCTION CONTRACT
+            "data": {
+                "id": alert.id,
+                "patient": getattr(alert.patient, "name", "ANONYMOUS"),
+                "device_serial": alert.device.serial_number,
+                "monitor_label": alert.device.monitor_label,
+                "type": alert.alert_type,
+                "severity": alert.severity,
+                "message": alert.message,
+                "timestamp": alert.created_at.isoformat(),
             }
+        }
+
+        for group in groups:
+            async_to_sync(channel_layer.group_send)(
+                group,
+                {
+                    "type": "send_alert",
+                    "data": broadcast_payload
+                }
+            )
+        logger.info(f"Broadcast: {event_type} synced for alert {alert.id}")
+
+    except Exception as e:
+        logger.error(f"Alert Broadcast Failure: {str(e)}")
+
+
+def _safe_create_alert(vital, alert_type, message, severity):
+    try:
+        # De-duplication: 30s window
+        existing = Alert.objects.filter(
+            device=vital.device,
+            alert_type=alert_type,
+            status=Alert.Status.ACTIVE,
+            created_at__gte=timezone.now() - timedelta(seconds=30)
+        ).first()
+
+        if existing:
+            return existing
+
+        alert = Alert.objects.create(
+            device=vital.device,
+            patient=vital.patient,
+            vital=vital,
+            doctor=getattr(vital.patient, "doctor", None) if vital.patient else None,
+            alert_type=alert_type,
+            message=message,
+            severity=severity,
         )
-
-    print(f"📡 ALERT SENT TO {groups}")
-
-    return alert
+        
+        send_alert_update(alert, "ALERT_CREATED")
+        return alert
+    except Exception as e:
+        logger.error(f"Alert Persistence Error: {str(e)}")
+        return None

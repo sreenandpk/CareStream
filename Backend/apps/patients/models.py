@@ -40,6 +40,10 @@ class Patient(BaseModel):
         null=True,
     )
 
+    # -------------------------
+    # 🔥 DEPRECATED: MODE (ICU Architecture Overhaul)
+    # Use Device.mode as primary gate.
+    # -------------------------
     MODE_CHOICES = [
         ("SIMULATION", "Simulation"),
         ("REAL", "Real Device"),
@@ -49,6 +53,7 @@ class Patient(BaseModel):
         max_length=20,
         choices=MODE_CHOICES,
         default="SIMULATION",
+        help_text="DEPRECATED: System now respects Device.mode as the single source of truth.",
     )
 
     admission_date = models.DateTimeField(auto_now_add=True)

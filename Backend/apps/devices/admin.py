@@ -47,6 +47,8 @@ class DeviceAdmin(admin.ModelAdmin):
                 "device_type",
                 "status",
                 "bed",
+                "mode",
+                "simulation_mode",
             )
         }),
 
@@ -57,7 +59,6 @@ class DeviceAdmin(admin.ModelAdmin):
                 "last_seen",
             )
         }),
-
         ("State", {
             "fields": (
                 "is_active",

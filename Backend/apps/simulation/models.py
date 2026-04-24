@@ -58,6 +58,11 @@ class SimulationConfig(BaseModel):
     # -------------------------
     # 🔥 CONTROL
     # -------------------------
+    variability = models.FloatField(
+        default=0.05,
+        help_text="Random noise factor (e.g. 0.05 = 5% noise)",
+    )
+
     auto_reset = models.BooleanField(default=True)
 
     reset_interval = models.IntegerField(
@@ -66,6 +71,18 @@ class SimulationConfig(BaseModel):
     )
 
     is_active = models.BooleanField(default=True)
+
+    # -------------------------
+    # 🔥 TARGET DEVICE
+    # -------------------------
+    device = models.OneToOneField(
+        "devices.Device",
+        on_delete=models.CASCADE,
+        related_name="simulation_config",
+        null=True,
+        blank=True,
+        help_text="The hardware unit this configuration applies to",
+    )
 
     # -------------------------
     # META

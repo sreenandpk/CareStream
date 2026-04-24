@@ -8,6 +8,7 @@ import { Plus, Search, Map, RefreshCw } from "lucide-react";
 import WardTable from "@/components/wards/WardTable";
 import WardDialog from "@/components/wards/WardDialog";
 import WardDeleteDialog from "@/components/wards/WardDeleteDialog";
+import PaginationController from "@/components/ui/PaginationController";
 import api from "@/lib/axios";
 import { toast } from "sonner";
 
@@ -31,12 +32,22 @@ export default function WardsPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedWard, setSelectedWard] = useState<Ward | null>(null);
 
-  const fetchWards = useCallback(async () => {
+  // Pagination States
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+
+  const fetchWards = useCallback(async (page: number = 1, search: string = "") => {
     setLoading(true);
     try {
-      const response = await api.get("wards/admin/wards/");
+      const response = await api.get(`wards/admin/wards/`, {
+        params: { page, search }
+      });
       if (response.data.success) {
-        setWards(response.data.data);
+        setWards(response.data.results);
+        setTotalPages(response.data.total_pages);
+        setTotalCount(response.data.count);
+        setCurrentPage(response.data.current_page);
       }
     } catch (error) {
       toast.error("Failed to load wards");
@@ -45,19 +56,26 @@ export default function WardsPage() {
     }
   }, []);
 
+  // Debounced Search Effect
   useEffect(() => {
-    fetchWards();
-  }, [fetchWards]);
+    const timer = setTimeout(() => {
+        fetchWards(1, searchQuery);
+    }, 400); // 400ms debounce
+    return () => clearTimeout(timer);
+  }, [searchQuery, fetchWards]);
 
+  // Page Change Effect
   useEffect(() => {
-    const query = searchQuery.toLowerCase();
-    const filtered = wards.filter(
-      (ward) =>
-        ward.name.toLowerCase().includes(query) ||
-        ward.floor.toString().includes(query)
-    );
-    setFilteredWards(filtered);
-  }, [searchQuery, wards]);
+    if (currentPage > 1 || searchQuery === "") {
+        fetchWards(currentPage, searchQuery);
+    }
+  }, [currentPage, fetchWards]);
+
+  // Handle manual refresh
+  const handleRefresh = () => {
+    setCurrentPage(1);
+    fetchWards(1, searchQuery);
+  };
 
   const handleEdit = (ward: Ward) => {
     setSelectedWard(ward);
@@ -115,7 +133,7 @@ export default function WardsPage() {
           <Button
             variant="outline"
             size="icon"
-            onClick={fetchWards}
+            onClick={handleRefresh}
             className="bg-black/40 border-zinc-800 hover:bg-zinc-900 text-zinc-400"
             title="Refresh list"
           >
@@ -124,26 +142,33 @@ export default function WardsPage() {
         </div>
 
         {/* Content Section */}
-        <div className="mt-6">
+        <div className="mt-6 bg-zinc-900/20 border border-zinc-800/50 rounded-xl overflow-hidden backdrop-blur-sm">
           <WardTable
-            wards={filteredWards}
+            wards={wards}
             isLoading={loading}
             onEdit={handleEdit}
             onDelete={handleDelete}
           />
+          
+          <PaginationController 
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            isLoading={loading}
+          />
         </div>
 
         {/* Stats Summary (Optional/Premium touch) */}
-        {!loading && wards.length > 0 && (
+        {!loading && (wards?.length ?? 0) > 0 && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
             <div className="p-4 rounded-xl bg-zinc-900/20 border border-zinc-800/30">
               <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Total Wards</p>
-              <p className="text-2xl font-bold mt-1 text-zinc-200">{wards.length}</p>
+              <p className="text-2xl font-bold mt-1 text-zinc-200">{wards?.length ?? 0}</p>
             </div>
             <div className="p-4 rounded-xl bg-zinc-900/20 border border-zinc-800/30">
               <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Active Units</p>
               <p className="text-2xl font-bold mt-1 text-emerald-500">
-                {wards.filter(w => w.is_active).length}
+                {wards?.filter(w => w.is_active).length ?? 0}
               </p>
             </div>
           </div>

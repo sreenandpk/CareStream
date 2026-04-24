@@ -42,28 +42,29 @@ export default function WardTable({
     );
   }
 
-  if (wards.length === 0) {
+  if (!wards || wards.length === 0) {
     return (
-      <div className="text-center p-8 text-muted-foreground">
-        No wards found. Click "Add Ward" to create one.
+      <div className="text-center p-12 text-zinc-500 bg-zinc-950/20 border-t border-zinc-800/50">
+        <p className="text-base font-medium">No wards found in this unit.</p>
+        <p className="text-xs mt-1 text-zinc-600 italic uppercase tracking-tighter font-black">Verify facility configuration or add a new ward.</p>
       </div>
     );
   }
 
   return (
-    <div className="rounded-md border border-terminal-border bg-black/20 backdrop-blur-sm overflow-hidden">
+    <div className="overflow-x-auto">
       <Table>
         <TableHeader className="bg-zinc-900/50">
-          <TableRow className="hover:bg-transparent border-terminal-border">
-            <TableHead className="text-zinc-400 font-medium">Name</TableHead>
-            <TableHead className="text-zinc-400 font-medium text-center">Floor</TableHead>
-            <TableHead className="text-zinc-400 font-medium">Description</TableHead>
-            <TableHead className="text-zinc-400 font-medium text-center">Status</TableHead>
-            <TableHead className="text-zinc-400 font-medium text-right pr-6">Actions</TableHead>
+          <TableRow className="hover:bg-transparent border-white/5 uppercase text-[10px] tracking-widest font-black">
+            <TableHead className="text-zinc-400 py-3">Ward Identity</TableHead>
+            <TableHead className="text-zinc-400 text-center py-3">Level</TableHead>
+            <TableHead className="text-zinc-400 py-3">Scope</TableHead>
+            <TableHead className="text-zinc-400 text-center py-3">Status</TableHead>
+            <TableHead className="text-zinc-400 text-right pr-6 py-3">Management</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {wards.map((ward) => (
+          {wards?.map((ward) => (
             <TableRow
               key={ward.id}
               className="border-terminal-border hover:bg-zinc-900/30 transition-colors"
