@@ -7,7 +7,7 @@ class UserSession(models.Model):
         related_name="sessions",
     )
     token = models.CharField(
-        max_length=255,
+        max_length=1024,
         db_index=True,
     )
     ip_address = models.GenericIPAddressField(

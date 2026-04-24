@@ -8,8 +8,10 @@ from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.utils import extend_schema
 
 from apps.core.role_permissions import IsAdminOrSystemAdmin
+from apps.core.pagination import StandardResultsSetPagination
 from apps.wards.models import Ward
 from apps.wards.serializers.admin_serializers import AdminWardSerializer
+
 from apps.wards.services.ward_service import (
     get_all_wards,
     create_ward,
@@ -23,6 +25,7 @@ audit_logger = logging.getLogger("audit")
 
 class AdminWardListCreateView(APIView):
     permission_classes = [IsAuthenticated, IsAdminOrSystemAdmin]
+    pagination_class = StandardResultsSetPagination
 
     @extend_schema(
         tags=["Wards Admin"],
@@ -31,18 +34,26 @@ class AdminWardListCreateView(APIView):
     def get(self, request):
         app_logger.info(f"Ward list requested by {request.user.username}")
 
-        # ✅ PERFORMANCE
+        search_query = request.query_params.get('search', '')
+
+        # ✅ PERFORMANCE + SEARCH
         wards = (
             get_all_wards()
             .prefetch_related("rooms__beds")   # deep relation
         )
 
-        serializer = AdminWardSerializer(wards, many=True)
+        if search_query:
+            from django.db.models import Q
+            wards = wards.filter(
+                Q(name__icontains=search_query) |
+                Q(floor__icontains=search_query)
+            )
 
-        return Response({
-            "success": True,
-            "data": serializer.data,
-        })
+        paginator = self.pagination_class()
+        result_page = paginator.paginate_queryset(wards, request)
+        serializer = AdminWardSerializer(result_page, many=True)
+
+        return paginator.get_paginated_response(serializer.data)
 
 
     @extend_schema(

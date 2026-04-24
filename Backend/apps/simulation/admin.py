@@ -70,7 +70,7 @@ class SimulationConfigAdmin(admin.ModelAdmin):
         }),
 
         ("Control", {
-            "fields": ("auto_reset", "reset_interval", "is_active")
+            "fields": ("device", "variability", "auto_reset", "reset_interval", "is_active")
         }),
 
         ("Timestamps", {

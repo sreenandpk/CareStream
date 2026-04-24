@@ -105,3 +105,64 @@ class Vital(BaseModel):
         if self.patient:
             return f"{self.patient.name} vitals at {self.recorded_at}"
         return f"Vitals at {self.recorded_at}"
+
+
+class VitalArchive(BaseModel):
+    """
+    🏥 WARM DATA LAYER (1 Minute Resolution)
+    Stores aggregated clinical trends for the last 24 hours.
+    """
+    device = models.ForeignKey(Device, on_delete=models.CASCADE, related_name="archives")
+    patient = models.ForeignKey(Patient, on_delete=models.SET_NULL, null=True, blank=True)
+    
+    # Aggregated Vitals
+    hr_min = models.IntegerField()
+    hr_max = models.IntegerField()
+    hr_avg = models.FloatField()
+    
+    spo2_min = models.IntegerField()
+    spo2_max = models.IntegerField()
+    spo2_avg = models.FloatField()
+    
+    rr_avg = models.FloatField()
+    temp_avg = models.FloatField()
+    
+    # Blood Pressure (Avg for trends)
+    systolic_avg = models.FloatField()
+    diastolic_avg = models.FloatField()
+    
+    data_type = models.CharField(max_length=20, default="REAL")
+    recorded_at = models.DateTimeField(db_index=True)
+
+    class Meta:
+        ordering = ["-recorded_at"]
+        indexes = [
+            models.Index(fields=["device", "recorded_at"]),
+            models.Index(fields=["data_type"]),
+        ]
+
+
+class VitalSummary(BaseModel):
+    """
+    ❄️ COLD DATA LAYER (1 Hour Resolution)
+    Stores long-term clinical audit footprints for 30 days.
+    """
+    device = models.ForeignKey(Device, on_delete=models.CASCADE, related_name="summaries")
+    
+    # Hour-level stats
+    hr_min = models.IntegerField()
+    hr_max = models.IntegerField()
+    hr_avg = models.FloatField()
+    
+    spo2_min = models.IntegerField()
+    spo2_max = models.IntegerField()
+    spo2_avg = models.FloatField()
+    
+    data_type = models.CharField(max_length=20, default="REAL")
+    recorded_at = models.DateTimeField(db_index=True)
+
+    class Meta:
+        ordering = ["-recorded_at"]
+        indexes = [
+            models.Index(fields=["device", "recorded_at"]),
+        ]

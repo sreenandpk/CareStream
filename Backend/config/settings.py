@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from datetime import timedelta
 
 # =====================
-# BASE CONFIG
+# BASE CONFIG (RELOAD TRIGGER: 18:31)
 # =====================
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -24,7 +24,7 @@ if not SECRET_KEY:
 
 DEBUG = os.getenv("DEBUG", "True") == "True"
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
 # =====================
 # APPLICATIONS
@@ -77,10 +77,31 @@ MIDDLEWARE = [
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 # =====================
-# CORS
+# CORS & SECURITY
 # =====================
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+CORS_ALLOW_CREDENTIALS = True
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+]
 
 # =====================
 # URLS
@@ -191,19 +212,37 @@ MEDIA_ROOT = BASE_DIR / "media"
 # DEFAULT PK
 # =====================
 
+# =====================
+# CACHING (REDIS)
+# =====================
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": os.getenv("REDIS_URL", "redis://127.0.0.1:6379/1"),
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+}
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = "accounts.User"
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-
-EMAIL_HOST = "smtp.gmail.com"
-
+# 📧 PRIMARY BACKED (SendGrid): Used for Registrations (Identity Shield)
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.sendgrid.net'
 EMAIL_PORT = 587
-
 EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'apikey'
+EMAIL_HOST_PASSWORD = os.getenv('SENDGRID_API_KEY')
+DEFAULT_FROM_EMAIL = os.getenv('EMAIL_HOST_USER', 'sreenandpk3@gmail.com')
+SERVER_EMAIL = DEFAULT_FROM_EMAIL
 
-EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
-
-EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
+# 🛡️ SECONDARY BACKEND (Gmail): Used for Reliable OTPs (High Deliverability)
+GMAIL_SMTP_HOST = 'smtp.gmail.com'
+GMAIL_SMTP_PORT = 587
+GMAIL_SMTP_USER = os.getenv('EMAIL_HOST_USER', 'sreenandpk3@gmail.com')
+GMAIL_SMTP_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD') # Your App Password
 
 LOGGING = {
     "version": 1,
@@ -249,12 +288,18 @@ LOGGING = {
         "console": {
             "class": "logging.StreamHandler",
         },
+
+        "websocket": {
+            "level": "INFO",
+            "class": "apps.core.logging_handlers.WebSocketLogHandler",
+            "formatter": "verbose",
+        },
     },
 
     "loggers": {
 
         "django": {
-            "handlers": ["console", "app_file"],
+            "handlers": ["console", "app_file", "websocket"],
             "level": "INFO",
             "propagate": True,
         },
@@ -266,25 +311,26 @@ LOGGING = {
         },
 
         "security": {
-            "handlers": ["security_file"],
+            "handlers": ["security_file", "websocket"],
             "level": "WARNING",
             "propagate": False,
         },
 
         "audit": {
-            "handlers": ["audit_file"],
+            "handlers": ["audit_file", "websocket"],
             "level": "INFO",
             "propagate": False,
         },
 
         "app": {
-            "handlers": ["app_file"],
+            "handlers": ["app_file", "websocket"],
             "level": "INFO",
             "propagate": False,
         },
     },
 }
 RATELIMIT_ENABLE = True
+RATELIMIT_FAIL_OPEN = True
 
 RATELIMIT_USE_CACHE = "default"
 CACHES = {
@@ -293,6 +339,7 @@ CACHES = {
         "LOCATION": "redis://127.0.0.1:6379/1",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "IGNORE_EXCEPTIONS": True,
         }
     }
 }
@@ -331,9 +378,21 @@ CELERY_RESULT_BACKEND = "redis://127.0.0.1:6379/0"
 from celery.schedules import crontab
 
 CELERY_BEAT_SCHEDULE = {
-    "run-simulation-every-5-seconds": {
+    "high-frequency-simulation-1s": {
         "task": "apps.simulation.tasks.run_simulation",
-        "schedule": 5.0,
+        "schedule": 1.0,
+    },
+    "archive-hot-vitals-10m": {
+        "task": "apps.vitals.tasks.archive_hot_vitals",
+        "schedule": 600.0, # Every 10 minutes
+    },
+    "summarize-warm-vitals-1h": {
+        "task": "apps.vitals.tasks.summarize_warm_vitals",
+        "schedule": 3600.0, # Every hour
+    },
+    "cleanup-cold-data-24h": {
+        "task": "apps.vitals.tasks.cleanup_cold_data",
+        "schedule": 86400.0, # Daily
     },
 }
 # 🔥 ADD THIS

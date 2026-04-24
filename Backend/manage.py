@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# FORCE RELOAD TRIGGER: 2026-04-13-12-04
 """Django's command-line utility for administrative tasks."""
 import os
 import sys

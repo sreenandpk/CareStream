@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.contrib.auth.models import update_last_login
 import logging
 from django_ratelimit.decorators import ratelimit
 from django.utils.decorators import method_decorator
@@ -31,11 +32,12 @@ from apps.accounts.models import User, OTP
 from apps.accounts.serializers.password_serializers import (
     ForgotPasswordSerializer,
 )
-from apps.accounts.services.session_service import (create_session,close_session)
+from apps.accounts.services.session_service import (create_session,close_session, force_logout_user)
+from drf_spectacular.utils import extend_schema
 from drf_spectacular.utils import extend_schema
 from drf_spectacular.types import OpenApiTypes
 @method_decorator(
-    ratelimit(key="ip", rate="5/m", block=True),
+    ratelimit(key="ip", rate="5/min", block=True),
     name="post",
 )
 @extend_schema(
@@ -90,6 +92,7 @@ class LoginView(APIView):
             f"User found {user.username}"
         )
         if user.is_locked:
+            app_logger.warning(f"Login failed: User {user.username} is LOCKED")
             security_logger.warning(
                 f"Locked account login {user.username}"
             )
@@ -101,9 +104,10 @@ class LoginView(APIView):
                 reason="locked",
             )
             raise ValidationError(
-                "Account locked"
+                "Account locked. Please contact support."
             )
         if not user.is_active:
+            app_logger.warning(f"Login failed: User {user.username} is INACTIVE")
             security_logger.warning(
                 f"Inactive login {user.username}"
             )
@@ -113,9 +117,9 @@ class LoginView(APIView):
                 user=user,
                 success=False,
                 reason="inactive",
-            )
+              )
             raise ValidationError(
-                "User inactive"
+                "User account is inactive."
             )
         if hasattr(user, "force_password_reset") and user.force_password_reset:
             token = create_reset_token(user)
@@ -138,7 +142,7 @@ class LoginView(APIView):
                     "username": user.username,
                 }
             )
-        if user.role in ["ADMIN", "SYSTEM_ADMIN"]:
+        if user.role == "ADMIN":
             OTP.objects.filter(
                 user=user,
                 otp_type="LOGIN",
@@ -165,6 +169,10 @@ class LoginView(APIView):
             )
         user.failed_login_attempts = 0
         user.save()
+        
+        # 🕒 Capture the exact login timestamp for the User Directory
+        update_last_login(None, user)
+
         refresh = RefreshToken.for_user(user)
         access_token = str(refresh.access_token)
         audit_logger.info(
@@ -203,7 +211,7 @@ class LoginView(APIView):
         )
         return response
 @method_decorator(
-    ratelimit(key="ip", rate="5/m", block=True),
+    ratelimit(key="ip", rate="5/min", block=True),
     name="post",
 )
 @extend_schema(
@@ -272,6 +280,10 @@ class VerifyOTPView(APIView):
         audit_logger.info(
             f"OTP verified {username}"
         )
+        
+        # 🕒 Capture the exact login timestamp for the User Directory
+        update_last_login(None, user)
+
         refresh = RefreshToken.for_user(user)
         access_token = str(refresh.access_token)
         response = Response(
@@ -295,7 +307,7 @@ class VerifyOTPView(APIView):
         )
         return response
 @method_decorator(
-    ratelimit(key="ip", rate="10/m", block=True),
+    ratelimit(key="ip", rate="60/m", block=True),
     name="post",
 )
 @extend_schema(
@@ -322,8 +334,13 @@ class RefreshView(APIView):
         try:
             refresh = RefreshToken(refresh_token)
             access_token = str(refresh.access_token)
+            
+            # Retrieve user for logging
+            user_id = refresh.get("user_id")
+            user = User.objects.get(id=user_id)
+            
             audit_logger.info(
-                "Access token refreshed"
+                f"Access token refreshed for {user.username}"
             )
             response = Response(
                 {
@@ -353,7 +370,7 @@ class RefreshView(APIView):
                 "Invalid refresh token"
             )
 @method_decorator(
-    ratelimit(key="ip", rate="10/m", block=True),
+    ratelimit(key="ip", rate="60/m", block=True),
     name="post",
 )
 @extend_schema(
@@ -367,15 +384,21 @@ class RefreshView(APIView):
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
     def post(self, request):
-        username = request.user.username
-        app_logger.info(
-            f"Logout request {username}"
+        username = request.user.username if request.user.is_authenticated else "anonymous"
+        
+        # Diagnostic Logging: Identify the phantom caller
+        referer = request.META.get("HTTP_REFERER", "unknown")
+        user_agent = request.META.get("HTTP_USER_AGENT", "unknown")
+        ip = request.META.get("REMOTE_ADDR", "unknown")
+        
+        security_logger.info(
+            f"DIAGNOSTIC: Logout Triggered - User: {username}, IP: {ip}, Referer: {referer}, UA: {user_agent}"
         )
+        app_logger.info(f"Logout request started for {username}")
+
         refresh_token = request.COOKIES.get("refresh")
         auth_header = request.headers.get("Authorization")
-        access_token = None
-        if auth_header and auth_header.startswith("Bearer"):
-            access_token = auth_header.split(" ")[1]
+        
         response = Response(
             {
                 "success": True,
@@ -386,18 +409,15 @@ class LogoutView(APIView):
             try:
                 token = RefreshToken(refresh_token)
                 token.blacklist()
-
-                audit_logger.info(
-                    f"Logout success {username}"
-                )
-
+                audit_logger.info(f"Token blacklisted during logout for {username}")
             except TokenError:
+                security_logger.warning(f"Invalid refresh token during logout attempt for {username}")
 
-                security_logger.warning(
-                    f"Invalid refresh token logout {username}"
-                )
-        if access_token:
-            close_session(access_token)
+        if request.user.is_authenticated:
+            # This is the line that wipes all sessions
+            force_logout_user(request.user)
+            audit_logger.info(f"Global Session Purge executed for {username}")
+
         response.delete_cookie("refresh", path="/")
         return response
 
@@ -448,12 +468,10 @@ class ForgotPasswordView(APIView):
 
             raise NotFound("User not found")
 
-        token = create_reset_token(user)
-
+        otp = generate_otp(user, "RESET")
         audit_logger.info(
-         f"Reset token generated {username}"
+         f"Reset OTP generated {username}"
         )
-        print("RESET TOKEN:", token)
         return Response(
             {
                 "success": True,
@@ -475,61 +493,72 @@ class ForgotPasswordView(APIView):
     },
 )
 class ConfirmResetView(APIView):
-
     authentication_classes = []
     permission_classes = []
 
     def post(self, request):
-
         app_logger.info("Confirm reset token request")
 
-        token = request.data.get("token")
+        username = request.data.get("username")
+        code = request.data.get("token")  # Can be OTP or ResetToken
         new_password = request.data.get("password")
+        old_password = request.data.get("old_password")
 
-        if not token or not new_password:
-            raise ValidationError("Token and password required")
+        if not username or not code or not new_password:
+            raise ValidationError("Username, token and password required")
 
-        token_hash = hashlib.sha256(
-            token.encode()
-        ).hexdigest()
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            raise ValidationError("User not found")
 
-        reset = ResetToken.objects.filter(
-            token_hash=token_hash,
-            used=False
-        ).first()
+        # 1. Try OTP (Forgot Password flow)
+        otp = OTP.objects.filter(
+            user=user,
+            code=code,
+            otp_type="RESET",
+            is_used=False
+        ).order_by("-created_at").first()
 
-        if not reset:
+        # 2. Try ResetToken (Forced Reset flow)
+        token_obj = None
+        if not otp:
+            token_hash = hashlib.sha256(code.encode()).hexdigest()
+            token_obj = ResetToken.objects.filter(
+                user=user,
+                token_hash=token_hash,
+                used=False
+            ).first()
 
-            security_logger.warning(
-                "Invalid reset token"
-            )
+        if not otp and not token_obj:
+            security_logger.warning(f"Invalid reset credentials for {username}")
+            raise ValidationError("Invalid verification code or token")
 
-            raise ValidationError("Invalid token")
-
-        if reset.is_expired():
-
-            security_logger.warning(
-                "Expired reset token"
-            )
-
+        # Expiry Check
+        if otp and otp.is_expired():
+            raise ValidationError("Code expired")
+        if token_obj and token_obj.is_expired():
             raise ValidationError("Token expired")
 
-        user = reset.user
+        # 3. Handle Old Password if provided (Security Requirement)
+        if old_password:
+            if not user.check_password(old_password):
+                 security_logger.warning(f"Wrong current password for {username} during reset")
+                 raise ValidationError("Current password is incorrect")
 
         user.set_password(new_password)
         user.force_password_reset = False
         user.save()
 
-        reset.used = True
-        reset.save()
+        if otp:
+            otp.is_used = True
+            otp.save()
+        if token_obj:
+            token_obj.used = True
+            token_obj.save()
 
-        audit_logger.info(
-            f"Password reset success {user.username}"
-        )
-
-        return Response(
-            {
-                "success": True,
-                "message": "Password reset successful",
-            }
-        )
+        audit_logger.info(f"Password reset success {user.username}")
+        return Response({
+            "success": True, 
+            "message": "Credentials updated successfully"
+        })

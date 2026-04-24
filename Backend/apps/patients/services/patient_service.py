@@ -65,6 +65,7 @@ def create_patient(data, user):
 def update_patient(patient_id, data, user):
 
     patient = get_patient_by_id(patient_id)
+    old_mode = patient.mode
 
     new_mode = data.get("mode", patient.mode)
 
@@ -110,6 +111,28 @@ def update_patient(patient_id, data, user):
 
     patient.updated_by = user
     patient.save()
+
+    # 🔥 SYNC TO DEVICE (Clinical source of truth)
+    # Always ensure device mode matches patient mode if assigned
+    try:
+        from apps.devices.services.device_service import update_device
+        device = getattr(patient.bed, "device", None)
+        if device and device.mode != patient.mode:
+            update_device(
+                device.id, 
+                {
+                    "mode": patient.mode,
+                    "simulation_mode": "GLOBAL" if patient.mode == "REAL" else "NORMAL"
+                }, 
+                user
+            )
+            import logging
+            logger = logging.getLogger("app")
+            logger.info(f"Sync: Device {device.serial_number} mode updated to {patient.mode} to match patient")
+    except Exception as e:
+        import logging
+        logger = logging.getLogger("app")
+        logger.error(f"Failed to sync mode to device: {str(e)}")
 
     return patient
 
