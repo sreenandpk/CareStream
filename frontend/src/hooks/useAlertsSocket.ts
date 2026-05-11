@@ -3,6 +3,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import { useAuthStore } from "@/store/authStore";
 import { useAlertStore } from "@/store/alertStore";
+import { refreshToken } from "@/lib/axios";
 
 export default function useAlertsSocket() {
   const { accessToken, user, _hasHydrated } = useAuthStore();
@@ -23,6 +24,8 @@ export default function useAlertsSocket() {
 
     socket.onopen = () => {
       console.log("Alert System: Emergency link active");
+      // 🔥 INITIAL SYNC: Catch every incident that happened before the live signal
+      useAlertStore.getState().syncAlerts();
     };
 
     socket.onmessage = (event) => {
@@ -46,17 +49,22 @@ export default function useAlertsSocket() {
       }
     };
 
-    socket.onclose = (e) => {
+    socket.onclose = async (e) => {
       if (e.code !== 1000) {
         console.warn("Alert System: Link severed. Reconnecting...");
       }
       
       if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+      
+      // 🛡️ STOP THE LOOP: Use a 10s safety window for recovery
+      const delay = e.code === 1006 ? 10000 : 5000;
+
       reconnectTimeoutRef.current = setTimeout(() => {
         if (accessToken && user) {
           connect();
         }
-      }, 3000);
+      }, delay);
+
     };
 
     socket.onerror = () => {

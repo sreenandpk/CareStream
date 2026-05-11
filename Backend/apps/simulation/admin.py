@@ -58,12 +58,6 @@ class SimulationConfigAdmin(admin.ModelAdmin):
             )
         }),
 
-        ("Respiration", {
-            "fields": (
-                "respiratory_rate_min",
-                "respiratory_rate_max",
-            )
-        }),
 
         ("Temperature", {
             "fields": ("temperature_min", "temperature_max")

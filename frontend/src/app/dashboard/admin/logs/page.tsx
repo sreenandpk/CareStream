@@ -4,29 +4,29 @@ import { useState, useEffect, useCallback } from "react";
 import api from "@/lib/axios";
 import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { 
-    Terminal, 
-    RefreshCw, 
-    ChevronLeft, 
-    ChevronRight, 
-    AlertCircle, 
-    ShieldCheck, 
-    Activity,
+    Zap,
+    Fingerprint,
+    ShieldAlert,
+    Clock,
     FileText,
     History,
-    LogOut
+    RefreshCw,
+    ChevronLeft,
+    ChevronRight,
+    Activity
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
-import DashboardShell from "@/components/DashboardShell";
 
 const LOG_FILES = [
-    { id: "app.log", label: "Application", icon: Activity, color: "text-blue-400" },
-    { id: "security.log", label: "Security", icon: ShieldCheck, color: "text-rose-400" },
-    { id: "audit.log", label: "Audit", icon: History, color: "text-emerald-400" },
-    { id: "error.log", label: "Errors", icon: AlertCircle, color: "text-amber-400" },
+    { id: "app.log", label: "Activity", icon: Zap, color: "text-[#5C61F2]", bg: "bg-[#5C61F2]/5" },
+    { id: "security.log", label: "Logins", icon: Fingerprint, color: "text-[#5C61F2]", bg: "bg-[#5C61F2]/5" },
+    { id: "audit.log", label: "Changes", icon: Clock, color: "text-emerald-500", bg: "bg-emerald-50" },
+    { id: "error.log", label: "Alerts", icon: ShieldAlert, color: "text-rose-500", bg: "bg-rose-50" },
 ];
 
 export default function LogsPage() {
@@ -39,7 +39,7 @@ export default function LogsPage() {
     const [totalPages, setTotalPages] = useState(1);
     const [error, setError] = useState("");
     const router = useRouter();
-    const { user, accessToken, _hasHydrated, logout } = useAuthStore();
+    const { user, accessToken, _hasHydrated } = useAuthStore();
 
     useEffect(() => {
         if (_hasHydrated) {
@@ -79,7 +79,7 @@ export default function LogsPage() {
             fetchLogs(1); 
             setPage(1);
         }
-    }, [activeTab, _hasHydrated]);
+    }, [activeTab, _hasHydrated, fetchLogs]);
 
     useEffect(() => {
         if (!autoRefresh || !_hasHydrated || !accessToken || !user || user.role !== "ADMIN") return;
@@ -87,7 +87,7 @@ export default function LogsPage() {
         let socket: WebSocket | null = null;
         let timeoutId: NodeJS.Timeout | null = null;
 
-        timeoutId = setTimeout(() => {
+        const connect = () => {
             setStatus("connecting");
             const baseUrl = (process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000').replace(/\/$/, "");
             const path = baseUrl.endsWith("/ws") ? "/logs/" : "/ws/logs/";
@@ -120,7 +120,9 @@ export default function LogsPage() {
 
             socket.onclose = () => setStatus("disconnected");
             socket.onerror = () => setStatus("disconnected");
-        }, 300);
+        };
+
+        timeoutId = setTimeout(connect, 300);
 
         return () => {
             if (timeoutId) clearTimeout(timeoutId);
@@ -131,162 +133,145 @@ export default function LogsPage() {
     if (!_hasHydrated || !user) return null;
 
     return (
-        <DashboardShell>
-            <div className="p-8 space-y-8 min-h-full">
-                <div className="flex flex-col gap-6">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <button 
-                                onClick={() => router.push("/dashboard/admin")}
-                                className="p-2 mr-2 hover:bg-zinc-900 rounded-xl border border-transparent hover:border-zinc-800 transition-all group"
-                            >
-                                <ChevronLeft className="w-5 h-5 text-zinc-500 group-hover:text-white" />
-                            </button>
-                            <div>
-                                <h1 className="text-4xl font-black tracking-tight">System Logs</h1>
-                                <p className="text-zinc-500 mt-1 font-medium italic">High-Fidelity Audit Trail & Infrastructure Diagnostic Feed.</p>
-                            </div>
-                        </div>
+        <div className="p-10 pt-16 space-y-12 min-h-screen bg-zinc-50/30 w-full max-w-[1600px] mx-auto">
+            {/* 🛡️ PREMIUM HEADER */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                <div className="flex flex-col text-left">
+                    <h1 className="text-4xl font-black tracking-tight text-zinc-900 leading-none uppercase">
+                        Activity <span className="text-[#5C61F2]">Logs</span>
+                    </h1>
+                </div>
 
-                        <div className="flex items-center gap-4 bg-zinc-900/50 p-3 rounded-xl border border-zinc-800">
-                            <div className="flex items-center space-x-2">
-                                <div className={`w-2 h-2 rounded-full ${
-                                    status === "connected" ? "bg-emerald-500 animate-pulse" : 
-                                    status === "connecting" ? "bg-amber-500 animate-bounce" : 
-                                    "bg-rose-500"
-                                }`} />
-                                <input 
-                                    type="checkbox"
-                                    id="live-stream" 
-                                    checked={autoRefresh}
-                                    onChange={(e) => setAutoRefresh(e.target.checked)}
-                                    className="w-4 h-4 rounded border-zinc-800 bg-zinc-950 text-blue-500 focus:ring-blue-500/20"
-                                />
-                                <Label htmlFor="live-stream" className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 cursor-pointer">
-                                    {status === "connected" ? "Live Real-time" : status === "connecting" ? "Connecting..." : "Stream Paused"}
-                                </Label>
-                            </div>
-                            <div className="w-px h-6 bg-zinc-800" />
-                            <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                onClick={() => {
-                                    fetchLogs(1);
-                                    setPage(1);
-                                }}
-                                disabled={loading}
-                                className="text-zinc-400 hover:text-white hover:bg-zinc-800 h-8 font-bold text-[10px] uppercase tracking-wider"
-                            >
-                                <RefreshCw className={`w-3.5 h-3.5 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                                Sync History
-                            </Button>
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3 px-6 py-4 bg-white rounded-2xl border border-zinc-200 shadow-sm">
+                        <Label htmlFor="auto-refresh" className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Auto Refresh</Label>
+                        <div 
+                            onClick={() => setAutoRefresh(!autoRefresh)}
+                            className={cn(
+                                "w-12 h-6 rounded-full p-1 cursor-pointer transition-all duration-500 ease-in-out",
+                                autoRefresh ? "bg-[#5C61F2]" : "bg-zinc-200"
+                            )}
+                        >
+                            <div className={cn(
+                                "w-4 h-4 bg-white rounded-full transition-all duration-500 shadow-sm transform",
+                                autoRefresh ? "translate-x-6" : "translate-x-0"
+                            )} />
                         </div>
                     </div>
-
-                    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-6">
-                        <TabsList className="bg-zinc-900/80 border border-zinc-800 p-1 rounded-xl h-auto">
-                            {LOG_FILES.map((log) => {
-                                const Icon = log.icon;
-                                return (
-                                    <TabsTrigger 
-                                        key={log.id} 
-                                        value={log.id}
-                                        className="data-[state=active]:bg-zinc-800 data-[state=active]:text-white px-6 py-2.5 rounded-lg transition-all"
-                                    >
-                                        <Icon className={`w-4 h-4 mr-2 ${log.color}`} />
-                                        <span className="font-bold tracking-tight">{log.label}</span>
-                                    </TabsTrigger>
-                                );
-                            })}
-                        </TabsList>
-
-                        {LOG_FILES.map((log) => (
-                            <TabsContent key={log.id} value={log.id} className="mt-0 outline-none">
-                                <Card className="bg-black/40 border-zinc-800/50 shadow-2xl backdrop-blur-md overflow-hidden">
-                                    <CardHeader className="border-b border-zinc-800/50 px-6 py-4">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <div className="bg-zinc-900 p-2 rounded-lg border border-zinc-800">
-                                                    <FileText className={`w-5 h-5 ${log.color}`} />
-                                                </div>
-                                                <div>
-                                                    <CardTitle className="text-lg tracking-tight">/{log.id}</CardTitle>
-                                                    <CardDescription className="text-zinc-500 font-mono text-[10px]">
-                                                        backend/logs/{log.id}
-                                                    </CardDescription>
-                                                </div>
-                                            </div>
-                                            
-                                            <div className="flex items-center gap-3">
-                                                <Button 
-                                                    variant="outline" 
-                                                    size="icon" 
-                                                    className="h-8 w-8 bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800"
-                                                    onClick={() => fetchLogs(Math.max(1, page - 1))}
-                                                    disabled={page === 1 || loading}
-                                                >
-                                                    <ChevronLeft className="w-4 h-4" />
-                                                </Button>
-                                                <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest bg-zinc-900/50 px-3 py-1.5 rounded-lg border border-zinc-800">
-                                                    Page <span className="text-white">{page}</span> / {totalPages}
-                                                </div>
-                                                <Button 
-                                                    variant="outline" 
-                                                    size="icon" 
-                                                    className="h-8 w-8 bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800"
-                                                    onClick={() => fetchLogs(Math.min(totalPages, page + 1))}
-                                                    disabled={page === totalPages || loading}
-                                                >
-                                                    <ChevronRight className="w-4 h-4" />
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </CardHeader>
-                                    <CardContent className="p-0">
-                                        <div className="h-[600px] w-full bg-[#050505] overflow-auto custom-scrollbar">
-                                            {error ? (
-                                                <div className="flex flex-col items-center justify-center h-full p-20 text-zinc-500 gap-4">
-                                                    <AlertCircle className="w-12 h-12 text-rose-500/50" />
-                                                    <p className="text-sm font-medium">{error}</p>
-                                                </div>
-                                            ) : lines.length === 0 ? (
-                                                <div className="flex flex-col items-center justify-center h-full p-20 text-zinc-500 gap-4">
-                                                    <Activity className="w-12 h-12 text-zinc-800 animate-pulse" />
-                                                    <p className="text-sm font-medium">No system events in this segment.</p>
-                                                </div>
-                                            ) : (
-                                                <div className="font-mono text-[11px] p-6 space-y-1">
-                                                    {lines.map((line, idx) => {
-                                                        const isError = line.toLowerCase().includes("error") || line.toLowerCase().includes("critical");
-                                                        const isWarning = line.toLowerCase().includes("warning");
-                                                        const isSuccess = line.toLowerCase().includes("success") || line.toLowerCase().includes("info");
-                                                        
-                                                        return (
-                                                            <div key={idx} className="flex gap-4 group hover:bg-white/5 py-1 px-2 rounded-sm transition-colors cursor-text">
-                                                                <span className="text-zinc-700 select-none min-w-[32px] text-right">
-                                                                    {(page - 1) * 50 + idx + 1}
-                                                                </span>
-                                                                <p className={`
-                                                                    break-all 
-                                                                    ${isError ? "text-rose-400 font-bold" : ""}
-                                                                    ${isWarning ? "text-amber-400 font-medium" : ""}
-                                                                    ${isSuccess ? "text-emerald-400" : "text-zinc-400"}
-                                                                `}>
-                                                                    {line}
-                                                                </p>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            </TabsContent>
-                        ))}
-                    </Tabs>
+                    <Button 
+                        onClick={() => fetchLogs(page)}
+                        disabled={loading}
+                        variant="outline"
+                        className="h-14 px-8 rounded-2xl border-zinc-200 bg-white hover:bg-zinc-50 font-black text-[11px] uppercase tracking-widest text-zinc-600 transition-all shadow-sm"
+                    >
+                        <RefreshCw className={cn("w-4 h-4 mr-3", loading && "animate-spin text-[#5C61F2]")} />
+                        Refresh
+                    </Button>
                 </div>
             </div>
-        </DashboardShell>
+
+            {/* 📋 LOGS INTERFACE */}
+            <div className="grid grid-cols-1 gap-8">
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                    <TabsList className="bg-white/50 p-2 rounded-[2rem] h-auto border border-zinc-200 shadow-sm flex flex-wrap gap-2 mb-8">
+                        {LOG_FILES.map((log) => (
+                            <TabsTrigger 
+                                key={log.id} 
+                                value={log.id}
+                                className="data-[state=active]:bg-white data-[state=active]:text-[#5C61F2] data-[state=active]:shadow-lg data-[state=active]:ring-1 data-[state=active]:ring-[#5C61F2]/10 flex items-center gap-4 px-8 py-4 rounded-[1.5rem] text-[11px] font-black uppercase tracking-widest text-zinc-400 transition-all border border-transparent hover:border-zinc-200"
+                            >
+                                <log.icon className={cn("w-4 h-4", activeTab === log.id ? "text-[#5C61F2]" : "text-zinc-300")} />
+                                {log.label}
+                            </TabsTrigger>
+                        ))}
+                    </TabsList>
+
+                    {LOG_FILES.map((log) => (
+                        <TabsContent key={log.id} value={log.id} className="mt-0 outline-none">
+                            <Card className="bg-white border-none rounded-[3rem] shadow-sm overflow-hidden border border-zinc-100">
+                                <CardHeader className="border-b border-zinc-50 p-10">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-6">
+                                            <div className={cn("w-16 h-16 rounded-3xl flex items-center justify-center shadow-sm", log.bg)}>
+                                                <FileText className={cn("w-7 h-7", log.color)} />
+                                            </div>
+                                            <div className="text-left">
+                                                <CardTitle className="text-2xl font-black tracking-tight text-zinc-900 uppercase">{log.label}</CardTitle>
+                                                <CardDescription className="text-zinc-400 text-[10px] font-black uppercase tracking-widest mt-1">
+                                                    System activity log
+                                                </CardDescription>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="flex items-center gap-4 bg-zinc-50/50 p-2 rounded-2xl border border-zinc-100">
+                                            <Button 
+                                                variant="ghost" 
+                                                size="icon" 
+                                                className="h-10 w-10 bg-white shadow-sm hover:bg-zinc-50 rounded-xl transition-all border border-zinc-100"
+                                                onClick={() => fetchLogs(Math.max(1, page - 1))}
+                                                disabled={page === 1 || loading}
+                                            >
+                                                <ChevronLeft className="w-5 h-5 text-zinc-400" />
+                                            </Button>
+                                            <div className="text-[11px] font-black text-zinc-500 uppercase tracking-widest px-4">
+                                                Page <span className="text-[#5C61F2]">{page}</span> / {totalPages}
+                                            </div>
+                                            <Button 
+                                                variant="ghost" 
+                                                size="icon" 
+                                                className="h-10 w-10 bg-white shadow-sm hover:bg-zinc-50 rounded-xl transition-all border border-zinc-100"
+                                                onClick={() => fetchLogs(Math.min(totalPages, page + 1))}
+                                                disabled={page === totalPages || loading}
+                                            >
+                                                <ChevronRight className="w-5 h-5 text-zinc-400" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="p-0">
+                                    <div className="h-[650px] w-full bg-white overflow-auto custom-scrollbar">
+                                        {error ? (
+                                            <div className="flex flex-col items-center justify-center h-full p-20 text-zinc-400 gap-6">
+                                                <ShieldAlert className="w-16 h-16 text-rose-500/20" />
+                                                <p className="text-sm font-black uppercase tracking-[0.2em]">{error}</p>
+                                            </div>
+                                        ) : lines.length === 0 ? (
+                                            <div className="flex flex-col items-center justify-center h-full p-20 text-zinc-300 gap-6">
+                                                <Activity className="w-16 h-16 text-zinc-100 animate-pulse" />
+                                                <p className="text-[11px] font-black uppercase tracking-[0.3em] opacity-40">No logs found</p>
+                                            </div>
+                                        ) : (
+                                            <div className="text-left p-10 space-y-2">
+                                                {lines.map((line, idx) => {
+                                                    const isError = line.toLowerCase().includes("error") || line.toLowerCase().includes("critical");
+                                                    const isWarning = line.toLowerCase().includes("warning");
+                                                    const isSuccess = line.toLowerCase().includes("success");
+                                                    
+                                                    return (
+                                                        <div key={idx} className="flex gap-8 group hover:bg-zinc-50/50 p-2.5 rounded-xl transition-all border border-transparent hover:border-zinc-50">
+                                                            <span className="text-zinc-300 font-black select-none min-w-[40px] text-right text-[10px] opacity-40 group-hover:opacity-100 transition-opacity">
+                                                                {(page - 1) * 50 + idx + 1}
+                                                            </span>
+                                                            <p className={cn(
+                                                                "break-all font-bold tracking-tight text-[13px] leading-relaxed transition-colors",
+                                                                isError ? "text-rose-600" :
+                                                                isWarning ? "text-amber-600" :
+                                                                isSuccess ? "text-emerald-600" : "text-zinc-500"
+                                                            )}>
+                                                                {line}
+                                                            </p>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+                    ))}
+                </Tabs>
+            </div>
+        </div>
     );
 }

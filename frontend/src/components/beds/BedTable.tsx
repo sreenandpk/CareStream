@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Edit2, Trash2, Hotel, CheckCircle2, XCircle, AlertCircle, Wrench } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 interface Bed {
   id: number;
@@ -40,9 +41,9 @@ export default function BedTable({
 }: BedTableProps) {
   if (isLoading) {
     return (
-      <div className="space-y-4">
+      <div className="p-8 space-y-4">
         {[...Array(5)].map((_, i) => (
-          <Skeleton key={i} className="h-16 w-full bg-zinc-900/50 rounded-xl" />
+          <Skeleton key={i} className="h-20 w-full border border-[#5C67F2]/10 rounded-2xl" />
         ))}
       </div>
     );
@@ -50,11 +51,13 @@ export default function BedTable({
 
   if (!beds || beds.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center p-20 bg-zinc-950/20 rounded-2xl border border-zinc-900 shadow-inner">
-        <Hotel className="w-10 h-10 text-zinc-800 mb-4" />
-        <h3 className="text-zinc-400 font-bold tracking-tight">Bed Inventory Uninitialized</h3>
-        <p className="text-zinc-600 text-[11px] mt-1 font-medium uppercase tracking-widest text-center px-12">
-          No beds have been registered to clinical rooms in this unit yet.
+      <div className="flex flex-col items-center justify-center p-20 bg-white">
+        <div className="w-20 h-20 rounded-3xl bg-zinc-50 flex items-center justify-center mb-6">
+            <Hotel className="w-10 h-10 text-zinc-200" />
+        </div>
+        <h3 className="text-2xl font-black text-zinc-900 tracking-tight">No Beds Found</h3>
+        <p className="text-zinc-500 text-center mt-3 max-w-sm font-medium">
+          No beds found. Add a new bed to get started.
         </p>
       </div>
     );
@@ -64,106 +67,102 @@ export default function BedTable({
     switch (status) {
       case "AVAILABLE": 
         return { 
-          color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+          color: "bg-emerald-50 text-emerald-500 border-emerald-100",
           icon: CheckCircle2,
           label: "Available"
         };
       case "OCCUPIED": 
         return { 
-          color: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+          color: "bg-[#5C67F2]/10 text-[#5C67F2] border-[#5C67F2]/20",
           icon: AlertCircle,
           label: "Occupied"
         };
       case "MAINTENANCE": 
         return { 
-          color: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+          color: "bg-amber-50 text-amber-500 border-amber-100",
           icon: Wrench,
           label: "Maintenance"
         };
       default: 
         return { 
-          color: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20",
+          color: "bg-zinc-50 text-zinc-400 border-zinc-100",
           icon: AlertCircle,
           label: status
         };
     }
   };
 
-  return (
-    <div className="overflow-x-auto">
-      <Table>
-        <TableHeader className="bg-zinc-900/40">
-          <TableRow className="border-zinc-800 hover:bg-transparent uppercase text-[10px] tracking-widest font-black">
-            <TableHead className="text-zinc-400 py-5 px-6">Bed Identity</TableHead>
-            <TableHead className="text-zinc-400 py-5 px-6">Room Assignment</TableHead>
-            <TableHead className="text-zinc-400 py-5 px-6">Operational State</TableHead>
-            <TableHead className="text-zinc-400 py-5 px-6">Service Eligibility</TableHead>
-            <TableHead className="text-zinc-400 py-5 px-6 text-right pr-10">Administration</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {beds?.map((bed) => {
-            const statusConfig = getStatusConfig(bed.status);
-            const StatusIcon = statusConfig.icon;
-            
-            return (
-              <TableRow 
-                key={bed.id} 
-                className="border-zinc-900/50 hover:bg-zinc-900/30 transition-all group"
-              >
-                <TableCell className="px-6 py-4 font-mono font-bold text-zinc-200">
-                  {bed.bed_number}
-                </TableCell>
-                <TableCell className="px-6 py-4 text-zinc-400">
-                  <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                    Room {getRoomNumber(bed.room)}
-                  </div>
-                </TableCell>
-                <TableCell className="px-6 py-4">
-                  <Badge variant="outline" className={`font-bold text-[10px] flex items-center gap-1.5 w-fit ${statusConfig.color}`}>
-                    <StatusIcon className="w-3 h-3" />
-                    {statusConfig.label}
-                  </Badge>
-                </TableCell>
-                <TableCell className="px-6 py-4">
-                  {bed.is_active ? (
-                    <div className="flex items-center gap-2 text-emerald-500/80">
-                      <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
-                      <span className="text-[10px] font-black uppercase tracking-wider">Active</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 text-zinc-600">
-                      <XCircle className="w-3.5 h-3.5" />
-                      <span className="text-[10px] font-black uppercase tracking-wider">Deactive</span>
-                    </div>
-                  )}
-                </TableCell>
-                <TableCell className="px-6 py-4 text-right">
-                  <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => onEdit(bed)}
-                      className="h-8 w-8 text-zinc-400 hover:text-emerald-400 hover:bg-emerald-400/10 rounded-lg"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => onDelete(bed)}
-                      className="h-8 w-8 text-zinc-400 hover:text-rose-400 hover:bg-rose-400/10 rounded-lg"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
-    </div>
-  );
+    return (
+        <div className="overflow-x-auto text-left">
+            <Table>
+                <TableHeader className="bg-zinc-50/50">
+                    <TableRow className="border-zinc-100 hover:bg-transparent">
+                        <TableHead className="text-zinc-400 font-black uppercase tracking-[0.2em] text-[9px] h-20 px-10">Bed Number</TableHead>
+                        <TableHead className="text-zinc-400 font-black uppercase tracking-[0.2em] text-[9px] h-20 px-10">Room</TableHead>
+                        <TableHead className="text-zinc-400 font-black uppercase tracking-[0.2em] text-[9px] h-20 px-10">Status</TableHead>
+                        <TableHead className="text-zinc-400 font-black uppercase tracking-[0.2em] text-[9px] h-20 px-10 text-right">Actions</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {beds?.map((bed) => {
+                        const statusConfig = getStatusConfig(bed.status);
+                        const StatusIcon = statusConfig.icon;
+                        
+                        return (
+                            <TableRow 
+                                key={bed.id} 
+                                className="border-zinc-50 hover:bg-zinc-50/40 transition-all group"
+                            >
+                                <TableCell className="px-10 py-8">
+                                    <div className="flex flex-col text-left">
+                                        <span className="font-black text-zinc-900 uppercase tracking-tight text-sm leading-none">
+                                            Bed {bed.bed_number}
+                                        </span>
+                                        <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mt-2 opacity-60">Serial: {String(bed.id || 0).padStart(4, '0')}</span>
+                                    </div>
+                                </TableCell>
+                                <TableCell className="px-10 py-8">
+                                    <div className="flex items-center gap-4 text-left">
+                                        <div className="w-10 h-10 rounded-2xl bg-[#5C61F2]/5 flex items-center justify-center border border-[#5C61F2]/10">
+                                            <Hotel className="w-5 h-5 text-[#5C61F2]" />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-xs font-black text-zinc-600 uppercase tracking-widest leading-none">Room {getRoomNumber(bed.room)}</span>
+                                            <span className="text-[9px] font-black text-zinc-300 uppercase tracking-widest mt-1.5">Room Assigned</span>
+                                        </div>
+                                    </div>
+                                </TableCell>
+                                <TableCell className="px-10 py-8">
+                                    <Badge className={cn("border-none text-[8px] font-black uppercase tracking-widest px-4 py-1 rounded-lg shadow-sm flex items-center gap-2 w-fit", statusConfig.color)}>
+                                        <StatusIcon className="w-3.5 h-3.5" />
+                                        {statusConfig.label}
+                                    </Badge>
+                                </TableCell>
+                                <TableCell className="px-10 py-8 text-right">
+                                    <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => onEdit(bed)}
+                                            className="h-11 w-11 text-zinc-400 hover:text-[#5C61F2] hover:bg-[#5C61F2]/5 rounded-2xl transition-all border border-transparent hover:border-[#5C61F2]/10"
+                                        >
+                                            <Edit2 className="h-4.5 w-4.5" />
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => onDelete(bed)}
+                                            className="h-11 w-11 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 rounded-2xl transition-all border border-transparent hover:border-rose-100/50"
+                                        >
+                                            <Trash2 className="h-4.5 w-4.5" />
+                                        </Button>
+                                    </div>
+                                </TableCell>
+                            </TableRow>
+                        );
+                    })}
+                </TableBody>
+            </Table>
+        </div>
+    );
 }

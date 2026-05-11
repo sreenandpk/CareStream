@@ -28,6 +28,8 @@ def create_ward(data, user):
         created_by=user,
         updated_by=user,
     )
+    if "nurses" in data:
+        ward.nurses.set(data["nurses"])
     return ward
 def update_ward(ward_id, data, user):
     ward = get_ward_by_id(ward_id)
@@ -52,6 +54,8 @@ def update_ward(ward_id, data, user):
     )
     ward.updated_by = user
     ward.save()
+    if "nurses" in data:
+        ward.nurses.set(data["nurses"])
     return ward
 def delete_ward(ward_id, user):
     ward = get_ward_by_id(ward_id)

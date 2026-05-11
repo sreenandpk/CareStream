@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
+import { generateSyntheticWaveform } from "@/lib/waveform-utils";
 
 interface VitalWaveformProps {
   data: number[]; // 🚨 PRODUCTION: Incoming data chunks from WebSocket
@@ -9,6 +10,9 @@ interface VitalWaveformProps {
   height?: number;
   initialRate?: number; // Added to bootstrap the wave instantly
   state?: "LIVE" | "DELAYED" | "OFFLINE";
+  isStale?: boolean;
+  signalState?: string;
+  isReview?: boolean;
 }
 
 /**
@@ -21,33 +25,60 @@ export default function VitalWaveform({
   type,
   height = 50,
   initialRate = 60,
-  state = "LIVE"
+  state = "LIVE",
+  isStale = false,
+  signalState = "GOOD",
+  isReview = false
 }: VitalWaveformProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const bufferRef = useRef<number[]>([]);
   const lastIndexRef = useRef(0);
   const animationRef = useRef<number>(0);
+  const lastValRef = useRef(0);
+  const lastUpdateTimeRef = useRef(Date.now());
+  const scanPosRef = useRef(0);
 
   // 📥 BOOTSTRAP: Fill initial buffer to prevent "blank" start
   useEffect(() => {
     if (bufferRef.current.length === 0) {
-      // 🏥 PATIENT SAFETY: Generate 200 points of flat baseline to start the sweep immediately
-      // This ensures the grid is never blank while waiting for the first history/socket chunk.
-      const startSamples = type === "ECG" ? new Array(200).fill(0) : new Array(200).fill(0.2);
-      bufferRef.current = startSamples;
+      // 🏥 CLINICAL GUARD: If signal is lost, start with flatline
+      const rate = signalState === "LOST" ? 0 : initialRate;
+      const initialBuffer = generateSyntheticWaveform(type, rate, 1000);
+      bufferRef.current = initialBuffer;
+      lastUpdateTimeRef.current = Date.now();
     }
-  }, [type]);
+  }, [type, initialRate, signalState]);
 
   const isFirstDataRef = useRef(true);
   
   // 📥 Ingest new data chunks into the circular buffer
   useEffect(() => {
     if (data.length > 0) {
-      // 🚀 CONTINUITY ENGINE: Append new buffer to internal stream immediately
-      // Increased slice to 1200 (approx 12s of history) for smoother clinical transition
-      bufferRef.current = [...bufferRef.current, ...data].slice(-1200); 
+      if (isReview) {
+        // 🔄 INSTANT SYNC: In review mode, replace buffer to avoid "jump spikes"
+        bufferRef.current = data;
+        lastIndexRef.current = 0;
+        scanPosRef.current = 0; // Reset sweep line to start
+      } else {
+        const isFirstPacket = bufferRef.current.length === 0;
+        bufferRef.current = [...bufferRef.current, ...data].slice(-1200); 
+        
+        // 🔥 ZERO-LAG SYNC: If this is the first data arrival, jump to the end
+        if (isFirstPacket) {
+          lastIndexRef.current = Math.max(0, bufferRef.current.length - 200);
+        }
+      }
+      lastUpdateTimeRef.current = Date.now();
     }
-  }, [data]);
+  }, [data, isReview]);
+
+  // 🏥 INSTANT KILL: Wipe buffer if signal is lost
+  useEffect(() => {
+    if (signalState === "LOST") {
+      bufferRef.current = new Array(200).fill(0);
+      lastValRef.current = 0;
+    }
+  }, [signalState]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -62,62 +93,85 @@ export default function VitalWaveform({
     canvas.width = width;
     canvas.height = h;
 
-    let scanPos = 0;
-    
-    // 🎛️ Velocity Controller
-    let samplesPerFrame = type === "ECG" ? 1.6 : 1.3;
-
-    const render = () => {
-      const buffer = bufferRef.current;
+      const render = () => {
+        const buffer = bufferRef.current;
+        // 🏥 CLINICAL STATE DETECTION
+        // We flatline if the state is explicitly OFFLINE or if the data has gone STALE
+        const isOffline = state === "OFFLINE" || isStale;
+        
+        // If we are LIVE but have no data yet, wait for the first chunk
+        if (!isOffline && buffer.length < 2) {
+          animationRef.current = requestAnimationFrame(render);
+          return;
+        }
       
-      // 🧘 BASELINE MODE: Only show flatline if we truly have NO data
-      const isShowingBaseline = buffer.length < 5;
+      // 🎛️ DYNAMIC ADAPTATION
+      const isLost = signalState === "LOST";
+      const baseSpeed = 3.33; 
+      let multiplier = state === "DELAYED" || isLost ? 0.4 : 1.0;
       
-      // 🏎️ DYNAMIC ADAPTATION
-      const baseSpeed = type === "ECG" ? 1.6 : 1.3;
-      let multiplier = state === "DELAYED" ? 0.4 : 1.0;
+      // Speed up slightly if buffer is getting full to catch up to real-time
+      if (buffer.length > 800) multiplier *= 1.1; 
+      if (buffer.length < 200 && !isOffline) multiplier *= 0.9; 
+
+      let samplesPerFrame = baseSpeed * multiplier;
+      const iterations = Math.max(2, Math.floor(samplesPerFrame));
+
+      ctx.clearRect(scanPosRef.current, 0, 25, h);
       
-      if (buffer.length > 1200) multiplier *= 1.2; 
-      if (buffer.length < 300 && state === "LIVE") multiplier *= 0.95; 
-
-      samplesPerFrame = baseSpeed * multiplier;
-
-      ctx.clearRect(scanPos, 0, 20, h);
+      // 🏥 SIGNAL FADING logic
+      ctx.globalAlpha = isLost ? 0.3 : 1.0;
 
       ctx.beginPath();
       ctx.strokeStyle = color;
-      ctx.lineWidth = 1.2;
-      ctx.lineCap = "butt";
-      ctx.lineJoin = "miter";
+      ctx.lineWidth = 1.8;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      
+      // 📺 CLINICAL CRT GLOW
+      ctx.shadowBlur = 4;
+      ctx.shadowColor = color;
 
-      for (let i = 0; i < samplesPerFrame; i++) {
-        const val = isShowingBaseline 
-          ? (type === "ECG" ? 0 : 0.2) 
-          : buffer[(lastIndexRef.current + i) % buffer.length];
+      for (let i = 0; i < iterations; i++) {
+        // 🛡️ STALENESS GUARD: If no new data in 2 seconds, force flatline (Disabled in Review Mode)
+        const isStaleData = !isReview && (Date.now() - lastUpdateTimeRef.current) > 2000;
         
-        const scale = type === "ECG" ? 0.4 : 0.5;
-        const offset = type === "ECG" ? 0.5 : 0.7;
-        const y = h - (val * h * scale + h * offset);
+        // 🛡️ DATA SOURCE SELECTION
+        const rawTarget = (isOffline || isStaleData) ? 0 : buffer[(lastIndexRef.current + i) % buffer.length];
+        
+        // 📉 SMOOTHING: Low-pass filter to prevent sharp vertical spikes during state changes
+        const alpha = 0.2; // Smoothing factor
+        const rawVal = lastValRef.current + alpha * (rawTarget - lastValRef.current);
+        lastValRef.current = rawVal;
+        
+        const scale = type === "ECG" ? 0.35 : 0.45;
+        const offset = type === "ECG" ? 0.5 : 0.6;
+        
+        const y = h - (rawVal * (h * scale) + (h * offset));
         
         if (i === 0) {
-            ctx.moveTo(scanPos, y);
+            ctx.moveTo(scanPosRef.current, y);
         } else {
-            ctx.lineTo(scanPos, y);
+            ctx.lineTo(scanPosRef.current, y);
         }
         
-        scanPos = (scanPos + 1) % width;
+        scanPosRef.current = (scanPosRef.current + 1) % width;
         
-        if (scanPos === 0) {
+        if (scanPosRef.current === 0) {
             ctx.stroke();
             ctx.beginPath();
             ctx.moveTo(0, y);
         }
-
-        ctx.clearRect(scanPos, 0, 6, h);
+        ctx.clearRect(scanPosRef.current, 0, 6, h);
       }
       
       ctx.stroke();
-      lastIndexRef.current = (lastIndexRef.current + Math.floor(samplesPerFrame)) % buffer.length;
+      
+      // Advance buffer index ONLY when we are actively showing spikes
+      if (!isOffline && buffer.length > 0) {
+        lastIndexRef.current = (lastIndexRef.current + Math.max(1, iterations - 1)) % buffer.length;
+      }
+      
       animationRef.current = requestAnimationFrame(render);
     };
 
@@ -126,14 +180,14 @@ export default function VitalWaveform({
     return () => {
       cancelAnimationFrame(animationRef.current);
     };
-  }, [color, type]);
+  }, [color, type, state, isStale, signalState]);
 
   return (
     <div className="w-full relative h-full bg-transparent overflow-hidden">
       {/* 🏁 BACKGROUND GRID (Behind Waveform) */}
-      <div className="absolute inset-0 pointer-events-none opacity-[0.08] grid grid-cols-12 grid-rows-6">
+      <div className="absolute inset-0 pointer-events-none opacity-[0.05] grid grid-cols-12 grid-rows-6">
         {[...Array(72)].map((_, i) => (
-          <div key={i} className="border-[0.2px] border-white/20" />
+          <div key={i} className="border-[0.1px] border-[#5C67F2]" />
         ))}
       </div>
 

@@ -71,6 +71,13 @@ class Alert(BaseModel):
 
     acknowledged_at = models.DateTimeField(null=True, blank=True)
     resolved_at = models.DateTimeField(null=True, blank=True)
+    resolved_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="resolved_alerts"
+    )
 
     is_active = models.BooleanField(default=True)
 
@@ -82,9 +89,10 @@ class Alert(BaseModel):
         self.acknowledged_at = timezone.now()
         self.save()
 
-    def resolve(self):
+    def resolve(self, user=None):
         self.status = self.Status.RESOLVED
         self.resolved_at = timezone.now()
+        self.resolved_by = user
         self.is_active = False
         self.save()
 

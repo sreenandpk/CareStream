@@ -48,9 +48,9 @@ def acknowledge_doctor_alert(alert):
     return alert
 
 
-def resolve_doctor_alert(alert):
+def resolve_doctor_alert(alert, user):
     if alert.status == Alert.Status.RESOLVED:
         raise ValidationError("Already resolved")
 
-    alert.resolve()
+    alert.resolve(user)
     return alert

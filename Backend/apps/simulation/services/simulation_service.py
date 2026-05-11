@@ -11,7 +11,6 @@ CLINICAL_PATTERNS = {
     "NORMAL": {
         "heart_rate": (60, 100),
         "spo2": (95, 100),
-        "respiratory_rate": (12, 18),
         "temperature": (36.5, 37.5),
         "systolic": (110, 130),
         "diastolic": (70, 85),
@@ -19,7 +18,6 @@ CLINICAL_PATTERNS = {
     "CRITICAL": {
         "heart_rate": (140, 190),
         "spo2": (75, 88),
-        "respiratory_rate": (28, 45),
         "temperature": (39.5, 41.0),
         "systolic": (180, 240),
         "diastolic": (100, 140),
@@ -27,7 +25,6 @@ CLINICAL_PATTERNS = {
     "RECOVERY": {
         "heart_rate": (90, 120),
         "spo2": (90, 94),
-        "respiratory_rate": (20, 26),
         "temperature": (37.8, 38.5),
         "systolic": (130, 150),
         "diastolic": (85, 95),
@@ -35,7 +32,6 @@ CLINICAL_PATTERNS = {
     "GLOBAL": {
         "heart_rate": (60, 140),
         "spo2": (85, 100),
-        "respiratory_rate": (12, 30),
         "temperature": (36.0, 40.0),
         "systolic": (90, 180),
         "diastolic": (60, 120),
@@ -55,10 +51,8 @@ def generate_vital_for_device(device):
         if not device.can_simulate:
             return None
 
-        # ⏱ Rate limiting (Strict 5 sec cooldown)
-        if device.last_simulated_at:
-            delta = (timezone.now() - device.last_simulated_at).total_seconds()
-            if delta < 5:
+            # ⏱ Rate limiting (Strict 0.5 sec cooldown for high-fidelity pulses)
+            if delta < 0.5:
                 return None
 
         # 🔧 Config Logic (Surgical Priority)
@@ -82,7 +76,6 @@ def generate_vital_for_device(device):
             ranges = {
                 "heart_rate": (config.heart_rate_min, config.heart_rate_max),
                 "spo2": (config.spo2_min, config.spo2_max),
-                "respiratory_rate": (config.respiratory_rate_min, config.respiratory_rate_max),
                 "temperature": (config.temperature_min, config.temperature_max),
                 "systolic": (config.systolic_bp_min, config.systolic_bp_max),
                 "diastolic": (config.diastolic_bp_min, config.diastolic_bp_max),
@@ -128,9 +121,6 @@ def generate_vital_for_device(device):
         temperature = round(smooth(device.last_temp, get_value(*ranges["temperature"])), 1)
         device.last_temp = temperature
 
-        # 🔥 RR
-        respiratory_rate = int(smooth(device.last_rr, get_value(*ranges["respiratory_rate"])))
-        device.last_rr = respiratory_rate
 
         # 🔥 BP
         systolic = int(smooth(device.last_sys, get_value(*ranges["systolic"])))
@@ -143,7 +133,7 @@ def generate_vital_for_device(device):
         device.last_simulated_at = timezone.now()
         device.save(update_fields=[
             "last_hr", "last_spo2", "last_temp",
-            "last_rr", "last_sys", "last_dia",
+            "last_sys", "last_dia",
             "last_simulated_at"
         ])
 
@@ -154,7 +144,6 @@ def generate_vital_for_device(device):
             "source": "SIMULATION",
             "heart_rate": heart_rate,
             "spo2": spo2,
-            "respiratory_rate": respiratory_rate,
             "temperature": temperature,
             "systolic_bp": systolic,
             "diastolic_bp": diastolic,

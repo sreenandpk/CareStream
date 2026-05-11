@@ -74,7 +74,7 @@ class DoctorAlertResolveView(APIView):
         responses=None,)
     def post(self, request, alert_id):
         alert = get_doctor_alert_by_id(alert_id, request.user)
-        resolve_doctor_alert(alert)
+        resolve_doctor_alert(alert, request.user)
 
         return Response({
             "success": True,

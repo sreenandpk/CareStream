@@ -5,6 +5,7 @@ import VitalCard from "./VitalCard";
 import { Activity, ShieldAlert, Zap, Search } from "lucide-react";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
+import HistoricalExplorer from "./HistoricalExplorer";
 
 interface VitalGridProps {
   vitals: VitalData[];
@@ -15,6 +16,7 @@ interface VitalGridProps {
 
 export default function VitalGrid({ vitals, connected, filters, filteredVitals }: VitalGridProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [reviewContext, setReviewContext] = useState<{ id: number; serial: string; name: string } | null>(null);
 
   const searchResults = filteredVitals.filter(v => {
     const query = searchQuery.toLowerCase();
@@ -33,57 +35,55 @@ export default function VitalGrid({ vitals, connected, filters, filteredVitals }
 
   if (vitals.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center p-20 bg-zinc-950/50 rounded-3xl border border-dashed border-zinc-800 backdrop-blur-sm">
-        <Activity className="w-16 h-16 text-zinc-800 mb-6 animate-pulse" />
-        <h3 className="text-2xl font-black text-zinc-400 uppercase tracking-tight">Telemetry Silent</h3>
-        <p className="text-zinc-600 text-center mt-3 max-w-sm font-medium italic">
+      <div className="flex flex-col items-center justify-center p-24 bg-white rounded-[3rem] border border-zinc-100 shadow-sm text-center">
+        <div className="w-20 h-20 rounded-[2rem] bg-zinc-50 flex items-center justify-center mb-8 border border-zinc-100">
+            <Activity className="w-10 h-10 text-zinc-300 animate-pulse" />
+        </div>
+        <h3 className="text-3xl font-black text-zinc-900 tracking-tight mb-4">Telemetry Silent</h3>
+        <p className="text-zinc-500 max-w-sm font-medium leading-relaxed">
           No live monitoring feeds detected in the clinical infrastructure. 
-          Hardware must be set to 'Simulation' or 'Real' to begin broadcasting vitals.
+          Configure hardware to begin broadcasting patient vitals.
         </p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       {/* Search & Stats Bar */}
-      <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-zinc-900/40 p-6 rounded-3xl border border-zinc-800/50 backdrop-blur-xl">
+      <div className="flex flex-col md:flex-row gap-6 items-center justify-between bg-white p-4 rounded-[2.5rem] border border-zinc-200/60 shadow-sm">
         <div className="relative flex-1 w-full group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-emerald-500 transition-colors" />
+          <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 group-focus-within:text-[#5C67F2] transition-colors" />
           <Input
             placeholder="Search active monitor by name or station ID..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-12 bg-black/40 border-zinc-800 focus:border-emerald-500/50 h-12 rounded-2xl transition-all"
+            className="pl-14 bg-zinc-50 border-zinc-100 focus:border-[#5C67F2]/30 h-14 rounded-[1.5rem] transition-all text-sm font-bold text-zinc-900 placeholder:text-zinc-400"
           />
-        </div>
-        
-        <div className="flex items-center gap-6 px-4">
-            <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
-                <span className="text-[10px] font-black uppercase text-zinc-400 tracking-widest">{vitals.length} Monitors Active</span>
-            </div>
-            {criticalCount > 0 && (
-                <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-rose-500 animate-ping shadow-[0_0_10px_rgba(244,63,94,0.5)]" />
-                    <span className="text-[10px] font-black uppercase text-rose-500 tracking-widest">{criticalCount} Critical Units</span>
-                </div>
-            )}
-            <div className="flex items-center gap-2">
-                <Zap className={cn("w-4 h-4", connected ? "text-amber-500" : "text-zinc-700")} />
-                <span className="text-[10px] font-black uppercase text-zinc-400 tracking-widest">
-                    {connected ? "Satellite Sync Active" : "Line Interrupted"}
-                </span>
-            </div>
         </div>
       </div>
 
       {/* Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr">
         {searchResults.map((data) => (
-          <VitalCard key={data.device.serial} data={data} />
+          <VitalCard 
+            key={data.device.serial} 
+            data={data} 
+            onReview={() => setReviewContext({ id: data.device.id, serial: data.device.serial, name: data.patient.name || "Unknown" })}
+          />
         ))}
       </div>
+
+      {/* 🕒 HISTORICAL REVIEW LAYER */}
+      {reviewContext && (
+        <HistoricalExplorer
+            isOpen={!!reviewContext}
+            onClose={() => setReviewContext(null)}
+            deviceId={reviewContext.id}
+            deviceSerial={reviewContext.serial}
+            patientName={reviewContext.name}
+        />
+      )}
       
       {filteredVitals.length === 0 && searchQuery && (
         <div className="flex flex-col items-center justify-center p-12 bg-zinc-950/30 rounded-3xl border border-zinc-900">

@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import DashboardShell from "@/components/DashboardShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Search, RefreshCw, Hotel, BarChart3, Users, Wrench } from "lucide-react";
+import { cn } from "@/lib/utils";
 import BedTable from "@/components/beds/BedTable";
 import BedDialog from "@/components/beds/BedDialog";
 import BedDeleteDialog from "@/components/beds/BedDeleteDialog";
@@ -110,126 +110,126 @@ export default function BedsPage() {
   const maintenanceCount = beds?.filter(b => b.status === "MAINTENANCE").length ?? 0;
   const occupancyRate = (beds?.length ?? 0) > 0 ? Math.round((occupiedCount / (beds?.length ?? 1)) * 100) : 0;
 
-  return (
-    <DashboardShell>
-      <div className="p-8 space-y-8 min-h-full max-w-7xl mx-auto">
-        {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-emerald-500/10 rounded-lg">
-                <Hotel className="w-6 h-6 text-emerald-500" />
-              </div>
-              <h1 className="text-4xl font-extrabold tracking-tight text-zinc-100">
-                Bed Inventory
-              </h1>
-            </div>
-            <p className="text-zinc-500 mt-2 font-medium italic text-sm">
-              Manage individual bed status, occupancy, and technical maintenance.
-            </p>
-          </div>
-          <Button
-            onClick={handleCreate}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20 px-8 h-12 rounded-xl transition-all active:scale-95"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Bed
-          </Button>
-        </div>
-
-        {/* Global Occupancy Metrics */}
-        {!loading && (beds?.length ?? 0) > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-6 rounded-2xl bg-zinc-900/20 border border-zinc-800/50 backdrop-blur-sm relative overflow-hidden group">
-              <div className="absolute right-[-10px] top-[-10px] opacity-10 group-hover:opacity-20 transition-opacity">
-                <BarChart3 className="w-24 h-24 text-zinc-100" />
-              </div>
-              <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Occupancy Rate</p>
-              <div className="flex items-end gap-2 mt-2">
-                <p className="text-4xl font-black text-white">{occupancyRate}%</p>
-                <div className={`h-1.5 w-full bg-zinc-800 rounded-full mb-2.5 overflow-hidden`}>
-                   <div 
-                    className="h-full bg-blue-500 transition-all duration-1000" 
-                    style={{ width: `${occupancyRate}%` }} 
-                   />
+    return (
+        <div className="p-8 pt-10 space-y-12 min-h-screen bg-zinc-50/30 w-full max-w-[1600px] mx-auto text-left">
+            {/* 🛡️ PREMIUM HEADER */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
+                <div className="flex flex-col text-left">
+                    <h1 className="text-4xl font-black tracking-tight text-zinc-900 leading-none uppercase">
+                        Hospital <span className="text-[#5C61F2]">Beds</span>
+                    </h1>
                 </div>
-              </div>
+
+                <Button
+                    onClick={handleCreate}
+                    className="bg-[#5C61F2] hover:bg-[#4A4ED4] text-white shadow-xl shadow-[#5C61F2]/20 h-16 px-10 rounded-3xl text-[11px] font-black uppercase tracking-widest transition-all active:scale-95 flex items-center gap-3 border-none"
+                >
+                    Add New Bed
+                </Button>
             </div>
 
-            <div className="p-6 rounded-2xl bg-zinc-900/20 border border-zinc-800/50 backdrop-blur-sm relative overflow-hidden group">
-               <div className="absolute right-[-10px] top-[-10px] opacity-10 group-hover:opacity-20 transition-opacity">
-                <Users className="w-24 h-24 text-blue-500" />
-              </div>
-              <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Occupied Beds</p>
-              <p className="text-4xl font-black mt-2 text-blue-500">{occupiedCount}</p>
-              <p className="text-[10px] text-zinc-600 mt-1 uppercase font-bold tracking-tighter">Verified patient assignments</p>
+            {/* 📋 TACTICAL METRICS */}
+            {!loading && (beds?.length ?? 0) > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div className="group relative bg-white p-8 rounded-[2.5rem] border border-zinc-100 shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 transition-all duration-500 overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50/30 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-indigo-100/50 transition-colors" />
+                        <div className="relative z-10 text-left">
+                            <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center mb-6 border border-indigo-500/20 group-hover:scale-110 transition-transform duration-500">
+                                <BarChart3 className="w-6 h-6 text-indigo-600" />
+                            </div>
+                            <p className="text-4xl font-black text-zinc-900 tracking-tight leading-none mb-2">{occupancyRate}%</p>
+                            <p className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Total Occupancy</p>
+                            <div className="mt-6 h-1.5 w-full bg-zinc-50 rounded-full overflow-hidden">
+                                <div className="h-full bg-[#5C61F2] transition-all duration-1000" style={{ width: `${occupancyRate}%` }} />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="group relative bg-white p-8 rounded-[2.5rem] border border-zinc-100 shadow-sm hover:shadow-xl hover:shadow-emerald-500/5 transition-all duration-500 overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50/30 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-emerald-100/50 transition-colors" />
+                        <div className="relative z-10 text-left">
+                            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center mb-6 border border-emerald-500/20 group-hover:scale-110 transition-transform duration-500">
+                                <Users className="w-6 h-6 text-emerald-600" />
+                            </div>
+                            <p className="text-4xl font-black text-zinc-900 tracking-tight leading-none mb-2">{occupiedCount}</p>
+                            <p className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Beds Occupied</p>
+                            <div className="mt-6 h-1.5 w-full bg-emerald-50 rounded-full overflow-hidden">
+                                <div className="h-full bg-emerald-500" style={{ width: `${(occupiedCount / (totalCount || 1)) * 100}%` }} />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="group relative bg-white p-8 rounded-[2.5rem] border border-zinc-100 shadow-sm hover:shadow-xl hover:shadow-amber-500/5 transition-all duration-500 overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-amber-50/30 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-amber-100/50 transition-colors" />
+                        <div className="relative z-10 text-left">
+                            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center mb-6 border border-amber-500/20 group-hover:scale-110 transition-transform duration-500">
+                                <Wrench className="w-6 h-6 text-amber-600" />
+                            </div>
+                            <p className="text-4xl font-black text-zinc-900 tracking-tight leading-none mb-2">{maintenanceCount}</p>
+                            <p className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Under Maintenance</p>
+                            <div className="mt-6 h-1.5 w-full bg-amber-50 rounded-full overflow-hidden">
+                                <div className="h-full bg-amber-500" style={{ width: `${(maintenanceCount / (totalCount || 1)) * 100}%` }} />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 🔍 SEARCH BAR */}
+            <div className="flex items-center gap-6 bg-white p-6 rounded-[2.5rem] border border-zinc-100 shadow-sm">
+                <div className="relative flex-1 group">
+                    <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-300 group-focus-within:text-indigo-600 transition-colors" />
+                    <Input
+                        placeholder="SEARCH BY BED NUMBER, ROOM, OR STATUS..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-14 bg-zinc-50 border-none focus-visible:ring-0 focus:bg-white focus:ring-2 focus:ring-[#5C61F2]/10 h-16 rounded-2xl transition-all text-[11px] font-black uppercase tracking-widest text-zinc-900 placeholder:text-zinc-400"
+                    />
+                </div>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleRefresh}
+                    className="bg-zinc-50 border border-zinc-100 hover:bg-indigo-50 text-zinc-400 hover:text-indigo-600 h-16 w-16 rounded-2xl transition-all active:scale-95 shadow-sm"
+                    title="Refresh"
+                >
+                    <RefreshCw className={cn("w-5 h-5", loading && "animate-spin")} />
+                </Button>
             </div>
 
-            <div className="p-6 rounded-2xl bg-zinc-900/20 border border-zinc-800/50 backdrop-blur-sm relative overflow-hidden group">
-               <div className="absolute right-[-10px] top-[-10px] opacity-10 group-hover:opacity-20 transition-opacity">
-                <Wrench className="w-24 h-24 text-amber-500" />
-              </div>
-              <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Under Maintenance</p>
-              <p className="text-4xl font-black mt-2 text-amber-500">{maintenanceCount}</p>
-              <p className="text-[10px] text-zinc-600 mt-1 uppercase font-bold tracking-tighter">Requires technical clearance</p>
+            {/* 📋 BED REGISTRY TABLE */}
+            <div className="bg-white border border-zinc-100 rounded-[3rem] overflow-hidden shadow-sm">
+                <BedTable
+                    beds={beds}
+                    isLoading={loading}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    getRoomNumber={getRoomNumber}
+                />
+                
+                <div className="p-10 border-t border-zinc-50 bg-zinc-50/20">
+                    <PaginationController 
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                        isLoading={loading}
+                    />
+                </div>
             </div>
-          </div>
-        )}
 
-        {/* Search Bar */}
-        <div className="flex items-center gap-4 bg-zinc-900/40 p-4 rounded-2xl border border-zinc-800/50 backdrop-blur-md">
-          <div className="relative flex-1 group">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-emerald-500 transition-colors" />
-            <Input
-              placeholder="Filter by bed number (e.g. B-01), room, or status..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-black/40 border-zinc-800 focus:border-emerald-500/50 transition-all placeholder:text-zinc-600 h-11"
+            {/* 🛠️ DIALOGS */}
+            <BedDialog
+                open={isDialogOpen}
+                onOpenChange={setIsDialogOpen}
+                bed={selectedBed}
+                onSuccess={handleRefresh}
             />
-          </div>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={handleRefresh}
-            className="bg-black/40 border-zinc-800 hover:bg-zinc-900 text-zinc-400 h-11 w-11 rounded-xl"
-            title="Refresh clinical sync"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          </Button>
+            <BedDeleteDialog
+                open={isDeleteDialogOpen}
+                onOpenChange={setIsDeleteDialogOpen}
+                bed={selectedBed}
+                onSuccess={handleRefresh}
+            />
         </div>
-
-        {/* Content Section */}
-        <div className="mt-2 bg-zinc-900/20 border border-zinc-800/50 rounded-2xl overflow-hidden backdrop-blur-sm">
-          <BedTable
-            beds={beds}
-            isLoading={loading}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            getRoomNumber={getRoomNumber}
-          />
-
-          <PaginationController 
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
-            isLoading={loading}
-          />
-        </div>
-
-        {/* Dialogs */}
-        <BedDialog
-          open={isDialogOpen}
-          onOpenChange={setIsDialogOpen}
-          bed={selectedBed}
-          onSuccess={fetchData}
-        />
-        <BedDeleteDialog
-          open={isDeleteDialogOpen}
-          onOpenChange={setIsDeleteDialogOpen}
-          bed={selectedBed}
-          onSuccess={fetchData}
-        />
-      </div>
-    </DashboardShell>
-  );
+    );
 }

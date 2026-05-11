@@ -45,6 +45,7 @@ class AdminDeviceSerializer(serializers.ModelSerializer):
             "last_dia",
             "config_data",
             "timestamp",
+            "api_key",
             "masked_key",
             "key_created_at",
             "is_key_revoked",
@@ -67,6 +68,7 @@ class AdminDeviceSerializer(serializers.ModelSerializer):
             "key_created_at",
             "is_key_revoked",
             "last_simulated_at",
+            "api_key",
             "created_at",
             "updated_at"
         ]

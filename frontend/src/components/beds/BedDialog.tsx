@@ -121,38 +121,40 @@ export default function BedDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px] bg-zinc-950 border-zinc-800 text-zinc-100 shadow-2xl">
-        <DialogHeader>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-emerald-500/10 rounded-lg">
-              <Hotel className="w-5 h-5 text-emerald-500" />
+      <DialogContent className="sm:max-w-[500px] bg-white border-none text-zinc-900 shadow-2xl rounded-[2.5rem] p-0 overflow-hidden">
+        <DialogHeader className="p-8 pb-4 bg-emerald-50/50 border-b border-emerald-100">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-[#5C61F2]/10 flex items-center justify-center border border-[#5C61F2]/20">
+              <Hotel className="w-6 h-6 text-[#5C61F2]" />
             </div>
-            <DialogTitle className="text-xl font-black uppercase tracking-tight">
-              {bed ? "Configure Bed" : "Install New Bed"}
-            </DialogTitle>
+            <div className="flex flex-col text-left">
+              <DialogTitle className="text-2xl font-black tracking-tight">
+                {bed ? "Edit Bed" : "Add New Bed"}
+              </DialogTitle>
+              <p className="text-[#5C61F2] text-[11px] font-black uppercase tracking-widest mt-0.5">
+                Bed Details & Room Assignment
+              </p>
+            </div>
           </div>
-          <p className="text-zinc-500 text-xs font-medium italic">
-            Assign beds to specific clinical rooms and manage their maintenance status.
-          </p>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6 py-4">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">
-                Parent Room
+        <form onSubmit={handleSubmit} className="p-8 pt-6 space-y-8">
+          <div className="space-y-6">
+            <div className="space-y-2 text-left">
+              <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-400 ml-1">
+                Select Room
               </Label>
               <Select
                 value={formData.room}
                 onValueChange={(val) => setFormData({ ...formData, room: val })}
                 required
               >
-                <SelectTrigger className="bg-black/40 border-zinc-800 focus:ring-emerald-500/20 text-zinc-200 h-11">
-                  <SelectValue placeholder="Select a clinical room" />
+                <SelectTrigger className="bg-zinc-50 border-none focus:ring-2 focus:ring-[#5C61F2]/10 h-14 rounded-2xl font-bold text-zinc-900 px-6 transition-all">
+                  <SelectValue placeholder="Select Room" />
                 </SelectTrigger>
-                <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-200">
+                <SelectContent className="bg-white border-none shadow-2xl rounded-2xl p-2">
                   {rooms?.map((room) => (
-                    <SelectItem key={`room-opt-${room.id}`} value={room.id.toString()}>
+                    <SelectItem key={`room-opt-${room.id}`} value={room.id.toString()} className="rounded-xl font-bold text-zinc-700">
                       Room {room.room_number} {room.ward_name ? `(${room.ward_name})` : ""}
                     </SelectItem>
                   ))}
@@ -160,71 +162,72 @@ export default function BedDialog({
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">
-                Bed Identification Number
+            <div className="space-y-2 text-left">
+              <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-400 ml-1">
+                Bed Number
               </Label>
               <Input
-                placeholder="e.g. B-01"
+                placeholder="e.g. B-102"
                 value={formData.bed_number}
                 onChange={(e) => setFormData({ ...formData, bed_number: e.target.value })}
-                className="bg-black/40 border-zinc-800 focus:ring-emerald-500/20 text-zinc-200 h-11 font-mono uppercase tracking-widest"
+                className="bg-zinc-50 border-none focus-visible:ring-2 focus-visible:ring-[#5C61F2]/10 h-14 rounded-2xl font-black text-zinc-900 uppercase tracking-widest transition-all"
                 required
               />
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">
-                Initial Operational Status
+            <div className="space-y-2 text-left">
+              <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-400 ml-1">
+                Status
               </Label>
               <Select
                 value={formData.status}
                 onValueChange={(val) => setFormData({ ...formData, status: val })}
               >
-                <SelectTrigger className="bg-black/40 border-zinc-800 focus:ring-emerald-500/20 text-zinc-200 h-11">
-                  <SelectValue placeholder="Select status" />
+                <SelectTrigger className="bg-zinc-50 border-none focus:ring-2 focus:ring-[#5C61F2]/10 h-14 rounded-2xl font-bold text-zinc-900 px-6 transition-all">
+                  <SelectValue placeholder="Select Status" />
                 </SelectTrigger>
-                <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-200 font-bold">
-                  <SelectItem value="AVAILABLE" className="text-emerald-400">Available For Admission</SelectItem>
-                  <SelectItem value="OCCUPIED" disabled>Occupied (Managed by Patients)</SelectItem>
-                  <SelectItem value="MAINTENANCE" className="text-amber-400">Under Maintenance</SelectItem>
+                <SelectContent className="bg-white border-none shadow-2xl rounded-2xl p-2">
+                  <SelectItem value="AVAILABLE" className="rounded-xl font-black text-emerald-600">Available</SelectItem>
+                  <SelectItem value="OCCUPIED" disabled className="rounded-xl font-black text-zinc-300">Occupied</SelectItem>
+                  <SelectItem value="MAINTENANCE" className="rounded-xl font-black text-amber-500">Maintenance</SelectItem>
                 </SelectContent>
               </Select>
-              <div className="flex items-center gap-2 mt-2 px-1">
-                <Info className="w-3 h-3 text-zinc-600" />
-                <p className="text-[9px] text-zinc-600 italic">Occupied status is managed automatically by patient assignments.</p>
-              </div>
             </div>
 
-            <div className="flex items-center justify-between p-4 bg-zinc-900/40 rounded-xl border border-zinc-800/50 backdrop-blur-md">
-              <div className="space-y-0.5">
-                <Label className="text-sm font-bold text-zinc-200">System Visibility</Label>
-                <p className="text-[10px] text-zinc-500 uppercase tracking-tighter">Active beds are visible to clinical staff</p>
+            <div className="flex items-center justify-between p-6 bg-zinc-50/50 rounded-[2.5rem] border border-dashed border-zinc-200">
+              <div className="space-y-1 text-left">
+                <p className="text-[10px] font-black text-zinc-900 uppercase tracking-widest">Active Status</p>
+                <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest opacity-60">Show bed in monitoring dashboard.</p>
               </div>
               <Switch
                 checked={formData.is_active}
                 onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
-                className="data-[state=checked]:bg-emerald-500"
+                className="data-[state=checked]:bg-[#5C61F2] scale-110"
               />
             </div>
           </div>
 
-          <DialogFooter className="pt-4 border-t border-zinc-800/50">
+          <DialogFooter className="gap-3 pt-4 border-t border-zinc-100">
             <Button
               type="button"
-              variant="outline"
+              variant="ghost"
               onClick={() => onOpenChange(false)}
-              className="bg-transparent border-zinc-800 hover:bg-zinc-900 text-zinc-400 font-bold"
+              className="h-14 px-8 rounded-2xl font-black text-[11px] uppercase tracking-widest text-zinc-400 hover:text-zinc-900 transition-all"
             >
-              Cancel
+              Discard
             </Button>
             <Button
               type="submit"
               disabled={loading}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-8 shadow-lg shadow-emerald-600/20"
+              className="h-14 px-10 bg-[#5C61F2] hover:bg-[#4A4ED4] text-white shadow-xl shadow-[#5C61F2]/20 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all active:scale-95 disabled:opacity-50"
             >
-              {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {bed ? "Save Changes" : "Deploy Bed"}
+              {loading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : bed ? (
+                "Save Changes"
+              ) : (
+                "Create Bed"
+              )}
             </Button>
           </DialogFooter>
         </form>

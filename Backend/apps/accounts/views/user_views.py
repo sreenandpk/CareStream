@@ -316,18 +316,18 @@ class UserUpdateView(APIView):
                 # 2. 🕒 WAIT: Intercept SendGrid webhook signals
                 start_time = time.time()
                 bounce_reason = None
-                print(f"\n⏳ [INTERCEPTOR START] Ensuring mailbox deliverability for {new_email.lower()}...")
+                app_logger.info(f"INTERCEPTOR START: Ensuring mailbox deliverability for {new_email.lower()}...")
                 app_logger.info(f"Interceptor active for {new_email}. Polling Redis for 20s...")
 
                 
                 while time.time() - start_time < 20.0:
                     elapsed = int(time.time() - start_time)
                     if elapsed > 0 and elapsed % 5 == 0:
-                        print(f"⏳ [POLLING] Still waiting for SendGrid response... ({elapsed}s/20s)")
+                        app_logger.info(f"POLLING: Still waiting for SendGrid response... ({elapsed}s/20s)")
                         
                     bounce_reason = cache.get(f"sec_block:{new_email.lower()}")
                     if bounce_reason:
-                        print(f"\n💥 [BOUNCE CAUGHT] Interceptor found block! Block detected at {elapsed}s.")
+                        app_logger.warning(f"BOUNCE CAUGHT: Interceptor found block! Block detected at {elapsed}s.")
                         break
                     time.sleep(0.5)
 
@@ -335,7 +335,7 @@ class UserUpdateView(APIView):
 
                 
                 if not bounce_reason:
-                    print(f"🏁 [CLEARED] No bounce received in 20s. Proceeding to OTP challenge.")
+                    app_logger.info(f"CLEARED: No bounce received in 20s. Proceeding to OTP challenge.")
                     app_logger.info(f"Interceptor cleared {new_email} after 20s. No bounce detected.")
 
 
@@ -584,7 +584,7 @@ class OnlineUsersView(APIView):
         try:
             # 1. Get Live IDs from Redis
             online_ids = PresenceService.get_online_user_ids()
-            print(f"📡 [API] Online IDs retrieved from store: {online_ids}")
+            app_logger.info(f"Presence retrieval: Online IDs retrieved from store: {online_ids}")
             
             # 2. Fetch User objects from DB for these IDs
             online_users = User.objects.filter(id__in=online_ids)

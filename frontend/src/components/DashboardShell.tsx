@@ -3,7 +3,8 @@
 import { useAuthStore } from "@/store/authStore";
 import { usePresenceStore } from "@/store/presenceStore";
 import { useRouter, usePathname } from "next/navigation";
-import { useState, ReactNode } from "react";
+import { useState, useEffect, ReactNode } from "react";
+import { cn } from "@/lib/utils";
 import Link from "next/link";
 import ChangePasswordModal from "@/components/ChangePasswordModal";
 import { 
@@ -13,53 +14,68 @@ import {
     LogOut, 
     Key,
     Activity,
-    Server,
-    Clock,
+    FileText,
+    History,
     UserCircle,
+    User,
+    ShieldCheck,
+    Fingerprint,
+    Power,
     ChevronRight,
-    Users2,
     Terminal,
-    Map,
+    Building2,
     LayoutGrid,
-    Bed,
-    Cpu,
-    BellRing
+    BedDouble,
+    Server,
+    BellRing,
+    DoorOpen,
+    Contact,
+    BriefcaseMedical,
+    ShieldAlert,
+    Home
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-import GlobalAlertOverlay from "@/components/alerts/GlobalAlertOverlay";
-import useAlertsSocket from "@/hooks/useAlertsSocket";
+import useVitalsSocket from "@/hooks/useVitalsSocket";
+import { useVitalsStore } from "@/store/vitalsStore";
 
 interface DashboardShellProps {
     children: ReactNode;
 }
 
 export default function DashboardShell({ children }: DashboardShellProps) {
-    const { user, logout, _hasHydrated } = useAuthStore();
+    const { user, accessToken, logout, _hasHydrated } = useAuthStore();
     const { onlineUserIds } = usePresenceStore();
     const router = useRouter();
     const pathname = usePathname();
     const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
 
-    // 🔥 Start global alert telemetry
-    useAlertsSocket();
+    // 🔬 Start global persistent vitals telemetry (Nexus Strategy)
+    const { connect: connectVitals } = useVitalsStore();
+    
+    useEffect(() => {
+        if (_hasHydrated && accessToken) {
+            connectVitals(accessToken);
+        }
+    }, [_hasHydrated, accessToken, connectVitals]);
 
     // CRITICAL: Wait for hydration before deciding the auth state.
     // If we haven't hydrated yet, we don't know if a user exists or not.
     if (!_hasHydrated) {
         return (
-            <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-blue-600/20 flex items-center justify-center animate-pulse">
-                    <Shield className="w-8 h-8 text-emerald-500/40" />
+            <div className="min-h-screen bg-zinc-50 flex flex-col items-center justify-center">
+                <div className="w-20 h-20 rounded-[2.5rem] bg-[#5C61F2] flex items-center justify-center shadow-2xl shadow-indigo-600/30">
+                    <Shield className="w-10 h-10 text-white animate-pulse" />
                 </div>
-                <p className="mt-4 text-zinc-600 text-xs font-bold uppercase tracking-widest animate-pulse">Establishing Secure Session...</p>
+                <div className="mt-10 flex flex-col items-center gap-2">
+                    <p className="text-zinc-900 text-sm font-black uppercase tracking-[0.4em]">Establishing Secure Node</p>
+                    <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest opacity-50">Handshaking Clinical Identity Matrix...</p>
+                </div>
             </div>
         );
     }
 
     if (!user) {
-        // We've hydrated and still have no user - redirect is handled by pages 
-        // but we'll return null here as a fallback.
         return null;
     }
 
@@ -69,107 +85,112 @@ export default function DashboardShell({ children }: DashboardShellProps) {
 
     const navigation = [
         ...(isAdmin ? [
-            { name: "Overview", href: "/dashboard/admin", icon: LayoutDashboard },
-            { name: "Live Vitals", href: "/dashboard/admin/vitals", icon: Activity },
-            { name: "Alert Center", href: "/dashboard/admin/alerts", icon: BellRing },
-            { name: "User Directory", href: "/dashboard/admin/users", icon: Users },
-            { name: "Patient Directory", href: "/dashboard/admin/patients", icon: Users2 },
-            { name: "Ward Management", href: "/dashboard/admin/wards", icon: Map },
-            { name: "Room Management", href: "/dashboard/admin/rooms", icon: LayoutGrid },
-            { name: "Bed Management", href: "/dashboard/admin/beds", icon: Bed },
-            { name: "Device Fleet", href: "/dashboard/admin/devices", icon: Cpu },
-            { name: "System Logs", href: "/dashboard/admin/logs", icon: Server },
+            { name: "Home", href: "/dashboard/admin", icon: Home },
+            { name: "Live Monitoring", href: "/dashboard/admin/vitals", icon: Activity },
+            { name: "Team Members", href: "/dashboard/admin/users", icon: ShieldCheck },
+            { name: "Patient List", href: "/dashboard/admin/patients", icon: Users },
+            { name: "Hospital Wards", href: "/dashboard/admin/wards", icon: Building2 },
+            { name: "Hospital Rooms", href: "/dashboard/admin/rooms", icon: LayoutGrid },
+            { name: "Hospital Beds", href: "/dashboard/admin/beds", icon: BedDouble },
+            { name: "Medical Devices", href: "/dashboard/admin/devices", icon: Server },
+            { name: "Activity Logs", href: "/dashboard/admin/logs", icon: Terminal },
         ] : []),
         ...(isDoctor ? [
-            { name: "Dashboard", href: "/dashboard/doctor", icon: Activity },
+            { name: "My Dashboard", href: "/dashboard/doctor", icon: Home },
+            { name: "Patient Wards", href: "/dashboard/doctor/wards", icon: Building2 },
+            { name: "Live Monitoring", href: "/dashboard/doctor/vitals", icon: Activity },
+            { name: "Medical Devices", href: "/dashboard/doctor/devices", icon: Server },
         ] : []),
         ...(isNurse ? [
-            { name: "Dashboard", href: "/dashboard/nurse", icon: Activity },
+            { name: "My Dashboard", href: "/dashboard/nurse", icon: Home },
+            { name: "Patient Wards", href: "/dashboard/nurse/wards", icon: Building2 },
+            { name: "Live Monitoring", href: "/dashboard/nurse/vitals", icon: Activity },
+            { name: "Medical Devices", href: "/dashboard/nurse/devices", icon: Server },
         ] : []),
     ];
 
     return (
-        <div className="flex min-h-screen bg-zinc-950 text-white font-sans selection:bg-emerald-500/30">
-            {/* Global Alert System */}
-            <GlobalAlertOverlay />
-            
-            {/* Sidebar */}
-            <aside className="w-64 border-r border-zinc-900 bg-black/20 backdrop-blur-3xl flex flex-col sticky top-0 h-screen">
-                <div className="p-8">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-zinc-900 flex items-center justify-center border border-zinc-800 shadow-xl">
-                            <Shield className="w-6 h-6 text-zinc-500" />
+        <div className="flex min-h-screen bg-white text-zinc-900 font-sans selection:bg-[#5C61F2]/10 overflow-hidden relative">
+            {/* 🛡️ PREMIUM SIDEBAR */}
+            <aside className="w-80 border-r border-zinc-100 bg-white flex flex-col sticky top-0 h-screen z-20 shadow-sm">
+                <div className="p-10 pb-8">
+                    <div className="flex items-center gap-4 group cursor-pointer" onClick={() => router.push(isAdmin ? "/dashboard/admin" : "/dashboard/nurse")}>
+                        <div className="w-12 h-12 rounded-2xl bg-[#5C61F2] flex items-center justify-center shadow-2xl shadow-[#5C61F2]/30 group-hover:scale-110 transition-transform duration-500">
+                            <Shield className="w-6 h-6 text-white" />
                         </div>
                         <div>
-                            <h2 className="font-black text-xl tracking-tight leading-none font-mono uppercase text-white">CareStream</h2>
-                            <span className="text-[10px] uppercase tracking-[0.2em] font-mono font-black text-zinc-700">_INFRASTRUCTURE</span>
+                            <h2 className="font-black text-2xl tracking-tighter leading-none text-zinc-900 uppercase">Care<span className="text-[#5C61F2]">Stream</span></h2>
                         </div>
                     </div>
                 </div>
 
-                <nav className="flex-1 px-4 space-y-1">
+                <nav className="flex-1 px-6 space-y-1 mt-6 overflow-y-auto custom-scrollbar">
                     {navigation.map((item) => {
                         const isActive = pathname === item.href;
                         return (
                             <Link
                                 key={item.name}
                                 href={item.href}
-                                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${
+                                className={cn(
+                                    "flex items-center gap-4 px-4 py-3 rounded-xl transition-all group relative overflow-hidden",
                                     isActive 
-                                    ? "bg-zinc-900 text-white shadow-inner" 
-                                    : "text-zinc-500 hover:text-zinc-200 hover:bg-zinc-900/50"
-                                }`}
+                                    ? "bg-zinc-50 text-[#5C61F2] shadow-sm ring-1 ring-zinc-100" 
+                                    : "text-zinc-400 hover:text-zinc-900 hover:bg-zinc-50/50"
+                                )}
                             >
-                                <item.icon className={`w-5 h-5 ${isActive ? "text-emerald-400" : "group-hover:text-emerald-400"}`} />
-                                <span className="font-semibold text-sm">{item.name}</span>
-                                {isActive && <ChevronRight className="w-4 h-4 ml-auto text-zinc-700" />}
+                                <item.icon className={cn("w-5 h-5 transition-colors", isActive ? "text-[#5C61F2]" : "text-zinc-300 group-hover:text-[#5C61F2]")} />
+                                <span className="font-black text-[11px] uppercase tracking-widest leading-none">{item.name}</span>
+                                {isActive && (
+                                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-6 bg-[#5C61F2] rounded-r-full" />
+                                )}
                             </Link>
                         );
                     })}
                 </nav>
 
                 {isAdmin && (
-                    <div className="p-4 mt-auto border-t border-zinc-900/50">
-                        <div className="bg-black/40 rounded-2xl p-4 border border-zinc-800/50 backdrop-blur-md">
-                            <div className="flex items-center gap-2 mb-3">
-                                <Terminal className="w-3.5 h-3.5 text-zinc-600" />
-                                <span className="text-[10px] font-mono font-black uppercase tracking-widest text-zinc-700">MONITOR_FEED</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <span className="text-[10px] font-mono font-medium text-zinc-600 uppercase tracking-tighter">_STAFF_ONLINE</span>
-                                <span className="bg-zinc-900 text-emerald-500/80 text-[11px] font-mono font-black px-2.5 py-1 rounded border border-zinc-800">
-                                    {onlineUserIds.size}
-                                </span>
+                    <div className="px-6 py-4">
+                        <div className="bg-[#5C61F2] rounded-[1.8rem] p-5 text-white shadow-xl shadow-[#5C61F2]/20 relative overflow-hidden group border-none">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 transition-transform duration-700 group-hover:scale-125 blur-2xl" />
+                            <div className="relative z-10">
+                                <div className="space-y-1 mb-5 text-left">
+                                    <h2 className="text-[11px] font-black leading-snug text-white uppercase tracking-[0.1em] opacity-90">
+                                        CareStream Healthcare Systems
+                                    </h2>
+                                </div>
+                                <div className="mt-6 bg-white/10 backdrop-blur-md rounded-[1.2rem] py-3 px-4 flex items-center justify-between border border-white/5">
+                                    <span className="text-[8px] font-black uppercase tracking-[0.2em] text-white/60 leading-none">Staff Online</span>
+                                    <span className="text-xs font-black text-white leading-none">{onlineUserIds.size}</span>
+                                </div>
                             </div>
                         </div>
                     </div>
                 )}
             </aside>
 
-            {/* Main Content */}
-            <main className="flex-1 flex flex-col">
-                {/* Header */}
-                <header className="h-20 border-b border-zinc-900 bg-black/10 backdrop-blur-md px-8 flex items-center justify-between sticky top-0 z-10">
-                    <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full border-2 border-zinc-800 overflow-hidden bg-zinc-900 flex-shrink-0">
-                            <img 
-                                src="/assets/avatar-placeholder.svg" 
-                                alt={user.username}
-                                className="w-full h-full object-cover"
-                            />
-                        </div>
-                        <div className="flex flex-col">
-                            <div className="flex items-center gap-2">
-                                <h3 className="font-mono font-black text-sm tracking-tight text-white">{user.username.replace(/\s+/g, '_')}</h3>
-                                {/* WhatsApp-style Online Pulse */}
-                                {onlineUserIds.has(Number(user.id)) && (
-                                    <div className="flex items-center gap-1.5 ml-1">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/60 shadow-[0_0_8px_rgba(16,185,129,0.3)]"></div>
-                                        <span className="text-[9px] font-mono font-black text-emerald-500/60 uppercase tracking-widest">Active</span>
-                                    </div>
-                                )}
+            {/* 🖥️ MAIN ENGINE VIEW */}
+            <main className="flex-1 flex flex-col min-w-0">
+                <header className="h-24 bg-white/70 backdrop-blur-xl px-12 flex items-center justify-between sticky top-0 z-10 border-b border-zinc-50 shadow-sm">
+                    <div className="flex items-center gap-6 group cursor-default">
+                        <div className="relative">
+                            <div className="w-14 h-14 rounded-2xl bg-zinc-100 flex items-center justify-center overflow-hidden shadow-sm group-hover:scale-105 transition-all duration-500 ring-4 ring-zinc-50">
+                                <User className="w-7 h-7 text-zinc-600" />
                             </div>
-                            <span className="text-[9px] font-mono font-black tracking-[0.2em] text-zinc-700 uppercase mt-0.5">{user.role}_ACCESS</span>
+                            {onlineUserIds.has(Number(user.id)) && (
+                                <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white border-2 border-white flex items-center justify-center shadow-lg">
+                                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                                </div>
+                            )}
+                        </div>
+                        <div className="flex flex-col text-left">
+                            <h3 className="font-bold text-base tracking-tight text-zinc-900 uppercase leading-none">{user.username}</h3>
+                            <div className="flex items-center gap-2 mt-2">
+                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
+                                    {user.role}
+                                </span>
+                                <span className="text-zinc-200 font-bold">•</span>
+                                <span className="text-[10px] font-black text-zinc-300 uppercase tracking-widest">ID: {String(user?.id || 0).padStart(4, '0')}</span>
+                            </div>
                         </div>
                     </div>
 
@@ -178,28 +199,30 @@ export default function DashboardShell({ children }: DashboardShellProps) {
                             variant="ghost" 
                             size="sm"
                             onClick={() => setIsChangePasswordOpen(true)}
-                            className="text-zinc-500 hover:text-white hover:bg-zinc-900 rounded-full"
+                            className="h-12 px-6 rounded-2xl text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 font-medium text-[11px] uppercase tracking-widest transition-all border border-transparent hover:border-zinc-200"
                         >
-                            <Key className="w-4 h-4 mr-2" />
-                            Security
+                            <Key className="w-4 h-4 mr-3" />
+                            Settings
                         </Button>
+
+                        <div className="w-[1px] h-8 bg-zinc-100 mx-2" />
+
                         <Button 
                             variant="ghost" 
                             size="sm"
-                            onClick={() => {
-                                logout();
-                                router.push("/login");
-                            }}
-                            className="text-rose-500/60 hover:text-rose-500 hover:bg-rose-500/10 rounded-full"
+                            onClick={() => logout()}
+                            className="h-12 px-6 rounded-2xl text-rose-400 hover:text-rose-600 hover:bg-rose-50 font-medium text-[11px] uppercase tracking-widest transition-all border border-transparent hover:border-rose-100/50"
                         >
-                            <LogOut className="w-4 h-4 mr-2" />
-                            Sign Out
+                            <Power className="w-4 h-4 mr-3" />
+                            Logout
                         </Button>
                     </div>
                 </header>
 
                 <div className="flex-1 overflow-y-auto">
-                    {children}
+                    <div className="min-h-full flex flex-col p-0">
+                        {children}
+                    </div>
                 </div>
             </main>
 

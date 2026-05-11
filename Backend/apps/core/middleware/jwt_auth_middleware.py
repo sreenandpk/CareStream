@@ -41,7 +41,8 @@ class JWTAuthMiddleware(BaseMiddleware):
                     scope["user"] = AnonymousUser()
                     return await self.inner(scope, receive, send)
 
-                user = await User.objects.aget(id=user_id)
+                from channels.db import database_sync_to_async
+                user = await database_sync_to_async(User.objects.get)(id=user_id)
                 scope["user"] = user
 
             except Exception as e:

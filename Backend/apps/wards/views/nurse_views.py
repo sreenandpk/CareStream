@@ -27,17 +27,28 @@ class NurseWardListView(APIView):
 
         wards = (
             Ward.objects.filter(
-                rooms__beds__patient__nurse=user
+                nurses=user
             )
             .prefetch_related("rooms__beds__patient")
             .distinct()
         )
 
+        from django.utils import timezone
+        now = timezone.now()
         serializer = NurseWardSerializer(wards, many=True)
-
+        # 🛡️ SHIFT LOGIC REMOVED: Always allow nurse access
         return Response({
             "success": True,
             "data": serializer.data,
+            "shift_status": {
+                "is_active": True,
+                "active_wards": [w.id for w in wards],
+                "shift_details": {
+                    "start_time": now.isoformat(),
+                    "end_time": (now + timezone.timedelta(hours=12)).isoformat(),
+                    "shift_type": "PERPETUAL"
+                }
+            }
         })
 
 
@@ -53,7 +64,7 @@ class NurseWardDetailView(APIView):
 
         ward = get_object_or_404(
             Ward.objects.filter(
-                rooms__beds__patient__nurse=user
+                nurses=user
             ).prefetch_related("rooms__beds__patient"),
             id=ward_id
         )

@@ -138,6 +138,23 @@ class AdminWardDetailView(APIView):
 
     @extend_schema(
         tags=["Wards Admin"],
+        request=AdminWardSerializer,
+        responses=AdminWardSerializer,
+    )
+    def patch(self, request, ward_id):
+        app_logger.info(f"Ward partial update {ward_id}")
+        ward_instance = get_object_or_404(Ward, id=ward_id)
+        serializer = AdminWardSerializer(ward_instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        ward = update_ward(ward_id, serializer.validated_data, request.user)
+        return Response({
+            "success": True,
+            "data": AdminWardSerializer(ward).data,
+        })
+
+
+    @extend_schema(
+        tags=["Wards Admin"],
         responses=None,
     )
     def delete(self, request, ward_id):

@@ -25,6 +25,17 @@ class User(AbstractUser):
         db_index=True,
     )
 
+    GENDER_CHOICES = [
+        ("M", "Male"),
+        ("F", "Female"),
+        ("O", "Other"),
+    ]
+    gender = models.CharField(
+        max_length=1,
+        choices=GENDER_CHOICES,
+        default="M",
+    )
+
     active_connections = models.PositiveIntegerField(default=0)
 
     # 🔥 ADD THIS (ONLY NEW THINGS YOU NEED)

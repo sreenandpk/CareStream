@@ -2,7 +2,7 @@ from django.contrib import admin
 from django import forms
 from django.core.exceptions import ValidationError
 
-from .models import Patient
+from .models import Patient, ClinicalNote, MedicationOrder, MedicationAdministration
 from apps.beds.models import Bed
 
 
@@ -162,3 +162,24 @@ class PatientAdmin(admin.ModelAdmin):
         if obj and obj.discharge_date:
             return False
         return super().has_change_permission(request, obj)
+
+
+@admin.register(ClinicalNote)
+class ClinicalNoteAdmin(admin.ModelAdmin):
+    list_display = ("patient", "nurse", "created_at")
+    search_fields = ("patient__name", "nurse__username", "content")
+    list_filter = ("created_at", "nurse")
+
+
+@admin.register(MedicationOrder)
+class MedicationOrderAdmin(admin.ModelAdmin):
+    list_display = ("patient", "medication_name", "dosage", "prescribed_by", "is_active")
+    search_fields = ("patient__name", "medication_name", "prescribed_by__username")
+    list_filter = ("is_active", "prescribed_by", "created_at")
+
+
+@admin.register(MedicationAdministration)
+class MedicationAdministrationAdmin(admin.ModelAdmin):
+    list_display = ("order", "nurse", "administered_at", "status")
+    search_fields = ("order__medication_name", "nurse__username")
+    list_filter = ("status", "administered_at", "nurse")

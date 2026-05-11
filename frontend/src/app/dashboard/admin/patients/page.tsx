@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import DashboardShell from "@/components/DashboardShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, RefreshCw, User, Users, Activity, Loader2, Filter } from "lucide-react";
+import { Plus, Search, RefreshCw, User, Users, Activity, Filter } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 import PatientTable from "@/components/patients/PatientTable";
 import PatientDialog from "@/components/patients/PatientDialog";
 import PatientDeleteDialog from "@/components/patients/PatientDeleteDialog";
@@ -118,115 +119,112 @@ export default function PatientsPage() {
   const activeCount = patients.filter(p => p.is_active).length;
   const liveHardwareCount = patients.filter(p => p.is_active && p.mode === "REAL").length;
 
-  return (
-    <DashboardShell>
-      <div className="p-8 space-y-8 min-h-full max-w-7xl mx-auto">
-        {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-500/10 rounded-lg">
-                <Users className="w-6 h-6 text-blue-500" />
-              </div>
-              <h1 className="text-4xl font-extrabold tracking-tight text-zinc-100">
-                Patient Directory
-              </h1>
-            </div>
-            <p className="text-zinc-500 mt-2 font-medium italic text-sm text-balance">
-              Administrative management of patient records, physician assignments, and clinical hardware protocols.
-            </p>
-          </div>
-          <Button
-            onClick={handleCreate}
-            className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20 px-8 h-12 rounded-xl transition-all active:scale-95"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Admit Patient
-          </Button>
-        </div>
+    return (
+        <div className="p-10 pt-16 space-y-12 min-h-screen bg-zinc-50/30 w-full max-w-[1600px] mx-auto text-left">
+            {/* 🛡️ PREMIUM HEADER */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
+                <div className="flex flex-col text-left">
+                    <h1 className="text-4xl font-black tracking-tight text-zinc-900 leading-none uppercase">
+                        Patient <span className="text-[#5C61F2]">List</span>
+                    </h1>
+                </div>
 
-        {/* Tactical Metrics */}
-        {!loading && patients.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-6 rounded-2xl bg-zinc-900/20 border border-zinc-800/50 backdrop-blur-sm relative overflow-hidden group">
-              <div className="absolute right-[-10px] top-[-10px] opacity-10 group-hover:opacity-20 transition-opacity">
-                <Users className="w-24 h-24 text-zinc-100" />
-              </div>
-              <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Total Admissions</p>
-              <div className="flex items-end gap-2 mt-2">
-                <p className="text-4xl font-black text-white">{patients.length}</p>
-                <p className="text-zinc-600 text-[10px] font-bold mb-1.5 uppercase">Historical Records</p>
-              </div>
+                <Button
+                    onClick={handleCreate}
+                    className="bg-[#5C61F2] hover:bg-[#4A4ED4] text-white shadow-xl shadow-[#5C61F2]/20 h-16 px-10 rounded-3xl text-[11px] font-black uppercase tracking-widest transition-all active:scale-95 flex items-center gap-3 border-none"
+                >
+                    Add New Patient
+                </Button>
             </div>
 
-            <div className="p-6 rounded-2xl bg-zinc-900/20 border border-zinc-800/50 backdrop-blur-sm relative overflow-hidden group">
-               <div className="absolute right-[-10px] top-[-10px] opacity-10 group-hover:opacity-20 transition-opacity">
-                <Activity className="w-24 h-24 text-emerald-500" />
-              </div>
-              <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Currently Admitted</p>
-              <p className="text-4xl font-black mt-2 text-emerald-500">{activeCount}</p>
-              <p className="text-[10px] text-zinc-600 mt-1 uppercase font-bold tracking-tighter">Active Clinical Monitoring</p>
+            {/* 📋 TACTICAL METRICS */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="group relative bg-white p-8 rounded-[2.5rem] border border-zinc-100 shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 transition-all duration-500 overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50/30 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-indigo-100/50 transition-colors" />
+                    <div className="relative z-10 text-left">
+                        <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center mb-6 border border-indigo-500/20 group-hover:scale-110 transition-transform duration-500">
+                            <Users className="w-6 h-6 text-indigo-600" />
+                        </div>
+                        <p className="text-4xl font-black text-zinc-900 tracking-tight leading-none mb-2">{patients.length}</p>
+                        <p className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Total Patients</p>
+                    </div>
+                </div>
+
+                <div className="group relative bg-white p-8 rounded-[2.5rem] border border-zinc-100 shadow-sm hover:shadow-xl hover:shadow-emerald-500/5 transition-all duration-500 overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50/30 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-emerald-100/50 transition-colors" />
+                    <div className="relative z-10 text-left">
+                        <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center mb-6 border border-emerald-500/20 group-hover:scale-110 transition-transform duration-500">
+                            <Activity className="w-6 h-6 text-emerald-600" />
+                        </div>
+                        <p className="text-4xl font-black text-zinc-900 tracking-tight leading-none mb-2">{activeCount}</p>
+                        <p className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Admitted Now</p>
+                    </div>
+                </div>
+
+                <div className="group relative bg-white p-8 rounded-[2.5rem] border border-zinc-100 shadow-sm hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-500 overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50/30 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-blue-100/50 transition-colors" />
+                    <div className="relative z-10 text-left">
+                        <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center mb-6 border border-blue-500/20 group-hover:scale-110 transition-transform duration-500">
+                            <Activity className="w-6 h-6 text-[#5C61F2]" />
+                        </div>
+                        <p className="text-4xl font-black text-zinc-900 tracking-tight leading-none mb-2">{liveHardwareCount}</p>
+                        <p className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Active Monitors</p>
+                    </div>
+                </div>
             </div>
 
-            <div className="p-6 rounded-2xl bg-zinc-900/20 border border-zinc-800/50 backdrop-blur-sm relative overflow-hidden group">
-               <div className="absolute right-[-10px] top-[-10px] opacity-10 group-hover:opacity-20 transition-opacity">
-                <Loader2 className="w-24 h-24 text-rose-500" />
-              </div>
-              <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Live Hardware Monitoring</p>
-              <p className="text-4xl font-black mt-2 text-rose-500">{liveHardwareCount}</p>
-              <p className="text-[10px] text-zinc-600 mt-1 uppercase font-bold tracking-tighter">Real-time device synchronization</p>
+            {/* 🔍 SEARCH BAR */}
+            <div className="flex items-center gap-6 bg-white p-6 rounded-[2.5rem] border border-zinc-100 shadow-sm">
+                <div className="relative flex-1 group">
+                    <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-300 group-focus-within:text-indigo-600 transition-colors" />
+                    <Input
+                        placeholder="SEARCH BY NAME, DIAGNOSIS, DOCTOR, OR ROOM..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-14 bg-zinc-50 border-none focus-visible:ring-0 focus:bg-white focus:ring-2 focus:ring-[#5C61F2]/10 h-16 rounded-2xl transition-all text-[11px] font-black uppercase tracking-widest text-zinc-900 placeholder:text-zinc-400"
+                    />
+                </div>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={fetchData}
+                    className="bg-zinc-50 border border-zinc-100 hover:bg-indigo-50 text-zinc-400 hover:text-indigo-600 h-16 w-16 rounded-2xl transition-all active:scale-95 shadow-sm"
+                    title="Refresh List"
+                >
+                    <RefreshCw className={cn("w-5 h-5", loading && "animate-spin")} />
+                </Button>
             </div>
-          </div>
-        )}
 
-        {/* Search Bar */}
-        <div className="flex items-center gap-4 bg-zinc-900/40 p-4 rounded-2xl border border-zinc-800/50 backdrop-blur-md">
-          <div className="relative flex-1 group">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-blue-500 transition-colors" />
-            <Input
-              placeholder="Search patients by name, diagnosis, doctor, or bed identifier..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-black/40 border-zinc-800 focus:border-blue-500/50 transition-all placeholder:text-zinc-600 h-11"
+            {/* 📋 PATIENT REGISTRY TABLE */}
+            <div className="bg-white border border-zinc-100 rounded-[3rem] overflow-hidden shadow-sm">
+                <PatientTable
+                    patients={filteredPatients}
+                    isLoading={loading}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    getDoctorName={getDoctorName}
+                    getBedNumber={getBedNumber}
+                />
+                
+                <div className="p-10 border-t border-zinc-50 bg-zinc-50/20 text-left">
+                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">System Status Active</p>
+                    <p className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest mt-1">All Patients • Total Count: {patients.length}</p>
+                </div>
+            </div>
+
+            {/* 🛠️ DIALOGS */}
+            <PatientDialog
+                open={isDialogOpen}
+                onOpenChange={setIsDialogOpen}
+                patient={selectedPatient}
+                onSuccess={fetchData}
             />
-          </div>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={fetchData}
-            className="bg-black/40 border-zinc-800 hover:bg-zinc-900 text-zinc-400 h-11 w-11 rounded-xl"
-            title="Refresh clinical data"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          </Button>
-        </div>
-
-        {/* Content Section */}
-        <div className="mt-2">
-            <PatientTable
-                patients={filteredPatients}
-                isLoading={loading}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                getDoctorName={getDoctorName}
-                getBedNumber={getBedNumber}
+            <PatientDeleteDialog
+                open={isDeleteDialogOpen}
+                onOpenChange={setIsDeleteDialogOpen}
+                patient={selectedPatient}
+                onSuccess={fetchData}
             />
         </div>
-
-        {/* Dialogs */}
-        <PatientDialog
-          open={isDialogOpen}
-          onOpenChange={setIsDialogOpen}
-          patient={selectedPatient}
-          onSuccess={fetchData}
-        />
-        <PatientDeleteDialog
-          open={isDeleteDialogOpen}
-          onOpenChange={setIsDeleteDialogOpen}
-          patient={selectedPatient}
-          onSuccess={fetchData}
-        />
-      </div>
-    </DashboardShell>
-  );
+    );
 }

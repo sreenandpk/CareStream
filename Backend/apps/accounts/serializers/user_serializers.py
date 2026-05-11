@@ -49,6 +49,7 @@ class CreateUserSerializer(serializers.ModelSerializer):
             "phone",
             "specialization",
             "license_number",
+            "gender",
         ]
 
     def validate_username(self, value):
@@ -156,6 +157,7 @@ class UserListSerializer(serializers.ModelSerializer):
             "last_login",
             "created_at",
             "updated_at",
+            "gender",
         ]
 class UserUpdateSerializer(serializers.ModelSerializer):
 
@@ -168,7 +170,8 @@ class UserUpdateSerializer(serializers.ModelSerializer):
             "specialization",   # 🔥 NEW
             "license_number",   # 🔥 NEW
             "is_active",
-            "is_locked",        # 🔥 NEW
+            "is_locked",
+            "gender",
         ]
 
     def validate_email(self, value):

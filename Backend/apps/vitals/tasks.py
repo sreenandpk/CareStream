@@ -9,6 +9,19 @@ import logging
 logger = logging.getLogger("vitals")
 
 @shared_task
+def drop_all_vitals_periodic():
+    """
+    🧹 PERIODIC TRUNCATION
+    Drops all Vital, Archive, and Summary records every 10 minutes.
+    Requested for system reset/cleanliness.
+    """
+    v_count, _ = Vital.objects.all().delete()
+    a_count, _ = VitalArchive.objects.all().delete()
+    s_count, _ = VitalSummary.objects.all().delete()
+    logger.info(f"System Reset: Dropped {v_count} vitals, {a_count} archives, {s_count} summaries.")
+    return f"Dropped {v_count} vitals."
+
+@shared_task
 def archive_hot_vitals(retention_hours=4):
     """
     🌪️ HOT -> WARM TRANSITION
@@ -33,7 +46,6 @@ def archive_hot_vitals(retention_hours=4):
             spo2_min=Min('spo2'),
             spo2_max=Max('spo2'),
             spo2_avg=Avg('spo2'),
-            rr_avg=Avg('respiratory_rate'),
             temp_avg=Avg('temperature'),
             sys_avg=Avg('systolic_bp'),
             dia_avg=Avg('diastolic_bp')
@@ -53,7 +65,6 @@ def archive_hot_vitals(retention_hours=4):
                 spo2_min=agg['spo2_min'],
                 spo2_max=agg['spo2_max'],
                 spo2_avg=agg['spo2_avg'],
-                rr_avg=agg['rr_avg'],
                 temp_avg=agg['temp_avg'],
                 systolic_avg=agg['sys_avg'],
                 diastolic_avg=agg['dia_avg']

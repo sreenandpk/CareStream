@@ -43,31 +43,37 @@ class Vital(BaseModel):
     # VITALS DATA
     # -------------------------
     heart_rate = models.IntegerField(
-        validators=[MinValueValidator(30), MaxValueValidator(220)],
+        validators=[MinValueValidator(0), MaxValueValidator(220)],
         help_text="Heart rate (bpm)",
+        null=True,
+        blank=True,
     )
 
     spo2 = models.IntegerField(
-        validators=[MinValueValidator(50), MaxValueValidator(100)],
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
         help_text="Oxygen saturation (%)",
+        null=True,
+        blank=True,
     )
 
-    respiratory_rate = models.IntegerField(
-        validators=[MinValueValidator(5), MaxValueValidator(60)],
-        help_text="Breaths per minute",
-    )
 
     temperature = models.FloatField(
         validators=[MinValueValidator(30), MaxValueValidator(45)],
         help_text="Body temperature (C)",
+        null=True,
+        blank=True,
     )
 
     systolic_bp = models.IntegerField(
         validators=[MinValueValidator(50), MaxValueValidator(250)],
+        null=True,
+        blank=True,
     )
 
     diastolic_bp = models.IntegerField(
         validators=[MinValueValidator(30), MaxValueValidator(150)],
+        null=True,
+        blank=True,
     )
 
     # -------------------------
@@ -124,7 +130,6 @@ class VitalArchive(BaseModel):
     spo2_max = models.IntegerField()
     spo2_avg = models.FloatField()
     
-    rr_avg = models.FloatField()
     temp_avg = models.FloatField()
     
     # Blood Pressure (Avg for trends)
@@ -166,3 +171,23 @@ class VitalSummary(BaseModel):
         indexes = [
             models.Index(fields=["device", "recorded_at"]),
         ]
+
+
+class ClinicalReviewLog(BaseModel):
+    """
+    📜 AUDIT LOG: Tracks clinical telemetry review sessions.
+    Required for clinical accountability and forensic traceability.
+    """
+    user = models.ForeignKey('accounts.User', on_delete=models.CASCADE, related_name="review_logs")
+    device = models.ForeignKey(Device, on_delete=models.CASCADE, related_name="review_logs")
+    accessed_at = models.DateTimeField(auto_now_add=True)
+    window_start = models.DateTimeField()
+    window_end = models.DateTimeField()
+
+    class Meta:
+        ordering = ["-accessed_at"]
+        verbose_name = "Clinical Review Log"
+        verbose_name_plural = "Clinical Review Logs"
+
+    def __str__(self):
+        return f"{self.user.username} (Nurse) reviewed {self.device.serial_number} at {self.accessed_at}"

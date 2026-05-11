@@ -1,4 +1,5 @@
 import logging
+import traceback
 from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -20,25 +21,45 @@ class NurseRoomListView(APIView):
         responses=NurseRoomSerializer(many=True),
     )
     def get(self, request):
-        user = request.user
+        try:
+            user = request.user
+            ward_id = request.query_params.get("ward")
 
-        app_logger.info(f"Nurse room list {user.username}")
+            app_logger.info(f"Nurse room fetch - User: {user.username}, Ward Filter: {ward_id}")
 
-        rooms = (
-            Room.objects.filter(
-                beds__patient__nurse=user
+            from apps.wards.models import NurseShift
+            from django.utils import timezone
+            now = timezone.now()
+            
+            active_wards = NurseShift.objects.filter(
+                nurse=user,
+                is_active=True,
+                start_time__lte=now,
+                end_time__gte=now
+            ).values_list('ward_id', flat=True)
+
+            rooms = Room.objects.filter(ward_id__in=active_wards)
+            
+            if ward_id and ward_id != "all":
+                rooms = rooms.filter(ward_id=ward_id)
+
+            serializer = NurseRoomSerializer(
+                rooms.select_related("ward").distinct(), 
+                many=True
             )
-            .select_related("ward")
-            .prefetch_related("beds__patient")
-            .distinct()
-        )
 
-        serializer = NurseRoomSerializer(rooms, many=True)
-
-        return Response({
-            "success": True,
-            "data": serializer.data,
-        })
+            return Response({
+                "success": True,
+                "data": serializer.data,
+            })
+        except Exception as e:
+            app_logger.error(f"NurseRoomListView Error: {str(e)}")
+            app_logger.error(traceback.format_exc())
+            return Response({
+                "success": False,
+                "error": str(e),
+                "traceback": traceback.format_exc()
+            }, status=500)
 
 
 class NurseRoomDetailView(APIView):
@@ -49,20 +70,30 @@ class NurseRoomDetailView(APIView):
         responses=NurseRoomSerializer,
     )
     def get(self, request, room_id):
-        user = request.user
+        try:
+            user = request.user
 
-        room = get_object_or_404(
-            Room.objects.filter(
-                beds__patient__nurse=user
+            from apps.wards.models import NurseShift
+            from django.utils import timezone
+            now = timezone.now()
+            
+            active_wards = NurseShift.objects.filter(
+                nurse=user,
+                is_active=True,
+                start_time__lte=now,
+                end_time__gte=now
+            ).values_list('ward_id', flat=True)
+
+            room = get_object_or_404(
+                Room.objects.filter(ward_id__in=active_wards).select_related("ward"),
+                id=room_id
             )
-            .select_related("ward")
-            .prefetch_related("beds__patient"),
-            id=room_id
-        )
 
-        serializer = NurseRoomSerializer(room)
+            serializer = NurseRoomSerializer(room)
 
-        return Response({
-            "success": True,
-            "data": serializer.data,
-        })
+            return Response({
+                "success": True,
+                "data": serializer.data,
+            })
+        except Exception as e:
+            return Response({"success": False, "error": str(e)}, status=500)

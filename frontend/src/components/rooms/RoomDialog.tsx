@@ -125,38 +125,40 @@ export default function RoomDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px] bg-zinc-950 border-zinc-800 text-zinc-100 shadow-2xl">
-        <DialogHeader>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-blue-500/10 rounded-lg">
-              <Home className="w-5 h-5 text-blue-500" />
+      <DialogContent className="sm:max-w-[500px] bg-white border-none text-zinc-900 shadow-2xl rounded-[2.5rem] p-0 overflow-hidden">
+        <DialogHeader className="p-8 pb-4 bg-indigo-50/50 border-b border-indigo-100">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20">
+              <Home className="w-6 h-6 text-indigo-600" />
             </div>
-            <DialogTitle className="text-xl font-black uppercase tracking-tight">
-              {room ? "Edit Room" : "Add New Room"}
-            </DialogTitle>
+            <div className="flex flex-col text-left">
+              <DialogTitle className="text-2xl font-black tracking-tight">
+                {room ? "Edit Room" : "Add New Room"}
+              </DialogTitle>
+              <p className="text-[#5C61F2] text-[11px] font-black uppercase tracking-widest mt-0.5">
+                Room Details & Ward Assignment
+              </p>
+            </div>
           </div>
-          <p className="text-zinc-500 text-xs font-medium italic">
-            {room ? "Modify room details and capacity." : "Configure a new room for a specific ward."}
-          </p>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6 py-4">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">
-                Assigned Ward
+        <form onSubmit={handleSubmit} className="p-8 pt-6 space-y-8">
+          <div className="space-y-6">
+            <div className="space-y-2 text-left">
+              <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-400 ml-1">
+                Select Ward
               </Label>
               <Select
                 value={formData.ward}
                 onValueChange={(val) => setFormData({ ...formData, ward: val })}
                 required
               >
-                <SelectTrigger className="bg-black/40 border-zinc-800 focus:ring-blue-500/20 text-zinc-200 h-11">
-                  <SelectValue placeholder="Select a ward" />
+                <SelectTrigger className="bg-zinc-50 border-none focus:ring-2 focus:ring-[#5C61F2]/10 h-14 rounded-2xl font-bold text-zinc-900 px-6 transition-all">
+                  <SelectValue placeholder="Select Ward" />
                 </SelectTrigger>
-                <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-200">
+                <SelectContent className="bg-white border-none shadow-2xl rounded-2xl p-2">
                   {(wards || []).map((ward) => (
-                    <SelectItem key={`ward-opt-${ward.id}`} value={ward.id.toString()}>
+                    <SelectItem key={`ward-opt-${ward.id}`} value={ward.id.toString()} className="rounded-xl font-bold text-zinc-900">
                       {ward.name}
                     </SelectItem>
                   ))}
@@ -164,83 +166,88 @@ export default function RoomDialog({
               </Select>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-2 text-left">
+                <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-400 ml-1">
                   Room Number
                 </Label>
                 <Input
                   placeholder="e.g. R-101"
                   value={formData.room_number}
                   onChange={(e) => setFormData({ ...formData, room_number: e.target.value })}
-                  className="bg-black/40 border-zinc-800 focus:ring-blue-500/20 text-zinc-200 h-11"
+                  className="bg-zinc-50 border-none focus-visible:ring-2 focus-visible:ring-[#5C61F2]/10 h-14 rounded-2xl font-black text-zinc-900 placeholder:text-zinc-300 transition-all uppercase tracking-wider"
                   required
                 />
               </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">
-                  Capacity (Beds)
+              <div className="space-y-2 text-left">
+                <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-400 ml-1">
+                  Bed Capacity
                 </Label>
                 <Input
                   type="number"
                   min="1"
                   value={formData.capacity}
                   onChange={(e) => setFormData({ ...formData, capacity: parseInt(e.target.value) || 1 })}
-                  className="bg-black/40 border-zinc-800 focus:ring-blue-500/20 text-zinc-200 h-11 font-mono font-bold"
+                  className="bg-zinc-50 border-none focus-visible:ring-2 focus-visible:ring-[#5C61F2]/10 h-14 rounded-2xl font-black text-zinc-900 text-lg transition-all"
                   required
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">
+            <div className="space-y-2 text-left">
+              <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-400 ml-1">
                 Room Type
               </Label>
               <Select
                 value={formData.room_type}
                 onValueChange={(val) => setFormData({ ...formData, room_type: val })}
               >
-                <SelectTrigger className="bg-black/40 border-zinc-800 focus:ring-blue-500/20 text-zinc-200 h-11">
-                  <SelectValue placeholder="Select type" />
+                <SelectTrigger className="bg-zinc-50 border-none focus:ring-2 focus:ring-[#5C61F2]/10 h-14 rounded-2xl font-bold text-zinc-900 px-6 transition-all">
+                  <SelectValue placeholder="Select classification" />
                 </SelectTrigger>
-                <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-200 font-bold">
-                  <SelectItem value="PRIVATE">Private Room</SelectItem>
-                  <SelectItem value="SHARED">Shared Room</SelectItem>
-                  <SelectItem value="ISOLATION">Isolation Room</SelectItem>
-                  <SelectItem value="OBSERVATION">Observation Room</SelectItem>
+                <SelectContent className="bg-white border-none shadow-2xl rounded-2xl p-2">
+                  <SelectItem value="PRIVATE" className="rounded-xl font-bold text-[#5C61F2]">Private Room</SelectItem>
+                  <SelectItem value="SHARED" className="rounded-xl font-bold text-zinc-900">Shared Room</SelectItem>
+                  <SelectItem value="ISOLATION" className="rounded-xl font-bold text-rose-600">Isolation Room</SelectItem>
+                  <SelectItem value="OBSERVATION" className="rounded-xl font-bold text-zinc-900">Observation Room</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="flex items-center justify-between p-4 bg-zinc-900/40 rounded-xl border border-zinc-800/50 backdrop-blur-md">
-              <div className="space-y-0.5">
-                <Label className="text-sm font-bold text-zinc-200">Room Active</Label>
-                <p className="text-[10px] text-zinc-500 uppercase tracking-tighter">Availability for bed assignment</p>
+            <div className="flex items-center justify-between p-6 bg-zinc-50/50 rounded-[2.5rem] border border-dashed border-zinc-200">
+              <div className="space-y-1 text-left">
+                <p className="text-[10px] font-black text-zinc-900 uppercase tracking-widest">Active Status</p>
+                <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest opacity-60">Allow bed assignments in this room.</p>
               </div>
               <Switch
                 checked={formData.is_active}
                 onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
-                className="data-[state=checked]:bg-blue-500"
+                className="data-[state=checked]:bg-[#5C61F2] scale-110"
               />
             </div>
           </div>
 
-          <DialogFooter className="pt-4 border-t border-zinc-800/50">
+          <DialogFooter className="gap-3 pt-6 border-t border-zinc-100">
             <Button
               type="button"
-              variant="outline"
+              variant="ghost"
               onClick={() => onOpenChange(false)}
-              className="bg-transparent border-zinc-800 hover:bg-zinc-900 text-zinc-400 font-bold"
+              className="h-14 px-8 rounded-2xl font-black text-[11px] uppercase tracking-widest text-zinc-400 hover:text-zinc-900 transition-all"
             >
-              Cancel
+              Discard
             </Button>
             <Button
               type="submit"
               disabled={loading}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 shadow-lg shadow-blue-600/20"
+              className="h-14 px-10 bg-indigo-600 hover:bg-indigo-700 text-white shadow-xl shadow-indigo-600/20 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all active:scale-95 disabled:opacity-50"
             >
-              {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {room ? "Update Room" : "Create Room"}
+              {loading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : room ? (
+                "Save Changes"
+              ) : (
+                "Create Room"
+              )}
             </Button>
           </DialogFooter>
         </form>

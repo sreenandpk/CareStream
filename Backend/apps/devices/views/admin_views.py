@@ -62,7 +62,7 @@ class AdminDeviceListCreateView(APIView):
                 "data": data,
             })
         except Exception as e:
-            error_logger.error(f"Device list error: {str(e)}")
+            app_logger.error(f"Device list error: {str(e)}")
             return Response(
                 {
                     "success": False, 
@@ -102,7 +102,7 @@ class AdminDeviceListCreateView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         except Exception as e:
-            error_logger.error(f"Device create error: {str(e)}")
+            app_logger.error(f"Device create error: {str(e)}")
             return Response(
                 {
                     "success": False, 
@@ -186,7 +186,7 @@ class AdminDeviceDetailView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         except Exception as e:
-            error_logger.error(f"Device update error: {str(e)}")
+            app_logger.error(f"Device update error: {str(e)}")
             return Response(
                 {
                     "success": False, 

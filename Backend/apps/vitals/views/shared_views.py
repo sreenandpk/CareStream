@@ -25,8 +25,19 @@ class VitalsSnapshotView(APIView):
                 is_active=True,
                 is_key_revoked=False
             ).select_related(
-                "bed", "bed__patient", "bed__room"
+                "bed", "bed__patient", "bed__room", "bed__room__ward"
             )
+
+            # 🔥 CLINICAL SCOPING (Strict Data Isolation)
+            if request.user.role == "NURSE":
+                from apps.wards.models import NurseShift
+                active_ward_ids = NurseShift.objects.filter(
+                    nurse=request.user,
+                    is_active=True
+                ).values_list("ward_id", flat=True)
+                queryset = queryset.filter(bed__room__ward_id__in=active_ward_ids)
+            elif request.user.role == "DOCTOR":
+                queryset = queryset.filter(bed__patient__doctor=request.user)
 
             # 🔍 Hierarchy Filtering
             ward_id = request.query_params.get("ward")
@@ -69,19 +80,59 @@ class VitalsHistoryView(APIView):
             
             queryset = Vital.objects.filter(
                 recorded_at__gte=threshold
-            ).select_related("device")
+            ).select_related("device", "device__bed", "device__bed__room", "device__bed__room__ward")
+
+            # 🔥 CLINICAL SCOPING (Strict Data Isolation)
+            if request.user.role == "NURSE":
+                from apps.wards.models import NurseShift
+                active_ward_ids = NurseShift.objects.filter(
+                    nurse=request.user,
+                    is_active=True
+                ).values_list("ward_id", flat=True)
+                queryset = queryset.filter(device__bed__room__ward_id__in=active_ward_ids)
+            elif request.user.role == "DOCTOR":
+                queryset = queryset.filter(device__bed__patient__doctor=request.user)
 
             if device_id:
-                queryset = queryset.filter(device_id=device_id)
+                # 🛠️ RESOLUTION: Support both Integer ID and Serial Number String
+                target_id = device_id
+                if not str(device_id).isdigit():
+                    from apps.devices.models import Device
+                    device = Device.objects.filter(serial_number=device_id).first()
+                    if not device:
+                        return Response({"success": False, "error": "Clinical Node not found"}, status=404)
+                    target_id = device.id
+                
+                queryset = queryset.filter(device_id=target_id)
+                resolved_device_id = target_id
+            else:
+                resolved_device_id = None
 
             # Optimization: Order by recorded_at for chronological graph population
             queryset = queryset.order_by("recorded_at")
 
+            # 📜 AUDIT: Log historical review sessions
+            is_review = request.query_params.get("review") == "true"
+            if is_review and resolved_device_id:
+                try:
+                    from apps.vitals.models import ClinicalReviewLog
+                    ClinicalReviewLog.objects.create(
+                        user=request.user,
+                        device_id=resolved_device_id,
+                        window_start=threshold,
+                        window_end=timezone.now()
+                    )
+                except Exception as log_err:
+
+                    logger.error(f"AUDIT_FAILURE: Failed to log review session: {str(log_err)}")
+
             serializer = VitalHistoryItemSerializer(queryset, many=True)
             return Response({
                 "success": True,
+                "is_historical_recon": is_review,
                 "results": serializer.data
             })
+
         except Exception as e:
             logger.error(f"HISTORY_CRASH: {str(e)}", exc_info=True)
             return Response({

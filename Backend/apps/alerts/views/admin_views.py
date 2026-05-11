@@ -135,7 +135,7 @@ class AdminAlertResolveView(APIView):
                     "message": "Already resolved"
                 })
 
-            alert.resolve()
+            alert.resolve(request.user)
 
             logger.info(f"Alert {alert.id} resolved by {request.user.id}")
 

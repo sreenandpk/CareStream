@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import DashboardShell from "@/components/DashboardShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Search, RefreshCw, Cpu, Activity, Wifi, ShieldAlert, WifiOff, Zap } from "lucide-react";
+import { cn } from "@/lib/utils";
 import DeviceTable from "@/components/devices/DeviceTable";
 import DeviceDialog from "@/components/devices/DeviceDialog";
 import DeviceDeleteDialog from "@/components/devices/DeviceDeleteDialog";
@@ -35,6 +35,7 @@ interface Device {
   masked_key?: string;
   key_created_at?: string;
   is_key_revoked?: boolean;
+  api_key?: string;
 }
 
 export default function DevicesPage() {
@@ -64,7 +65,7 @@ export default function DevicesPage() {
         setBeds(bedsRes.data.data || bedsRes.data.results || []);
       }
     } catch (error) {
-      toast.error("Failed to sync clinical hardware fleet");
+      toast.error("Failed to sync devices");
     } finally {
       setLoading(false);
     }
@@ -115,7 +116,7 @@ export default function DevicesPage() {
         fetchData();
       }
     } catch (error) {
-      toast.error("Failed to rotate clinical hardware key");
+      toast.error("Failed to update device key");
     }
   };
 
@@ -129,7 +130,7 @@ export default function DevicesPage() {
         fetchData();
       }
     } catch (error) {
-      toast.error("Failed to revoke hardware credentials");
+      toast.error("Failed to revoke credentials");
     }
   };
 
@@ -137,122 +138,125 @@ export default function DevicesPage() {
   const errorCount = devices.filter(d => d.status === "ERROR").length;
   const simulationCount = devices.filter(d => d.mode === "SIMULATION").length;
 
-  return (
-    <DashboardShell>
-      <div className="p-8 space-y-8 min-h-full max-w-7xl mx-auto">
-        {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-emerald-500/10 rounded-lg">
-                <Cpu className="w-6 h-6 text-emerald-500" />
-              </div>
-              <h1 className="text-4xl font-extrabold tracking-tight text-zinc-100">
-                Device Fleet
-              </h1>
-            </div>
-            <p className="text-zinc-500 mt-2 font-medium italic text-sm">
-              Strategic monitoring and configuration of clinical hardware, vital protocols, and heartbeat connectivity.
-            </p>
-          </div>
-          <Button
-            onClick={handleCreate}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20 px-8 h-12 rounded-xl transition-all active:scale-95"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Register Hardware
-          </Button>
-        </div>
+    return (
+        <div className="p-10 pt-16 space-y-12 min-h-screen bg-zinc-50/30 w-full max-w-[1600px] mx-auto text-left">
+            {/* 🛡️ PREMIUM HEADER */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
+                <div className="flex flex-col text-left">
+                    <h1 className="text-4xl font-black tracking-tight text-zinc-900 leading-none uppercase">
+                        Medical <span className="text-[#5C61F2]">Devices</span>
+                    </h1>
+                </div>
 
-        {/* Fleet Metrics */}
-        {!loading && devices.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="p-6 rounded-2xl bg-zinc-900/20 border border-zinc-800/50 backdrop-blur-sm relative overflow-hidden group">
-              <div className="absolute right-[-10px] top-[-10px] opacity-10 group-hover:opacity-20 transition-opacity">
-                <Wifi className="w-20 h-20 text-emerald-500" />
-              </div>
-              <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Active Links</p>
-              <p className="text-4xl font-black mt-2 text-emerald-500">{onlineCount}</p>
-              <p className="text-[10px] text-zinc-600 mt-1 uppercase font-bold tracking-tighter">Healthy Heartbeats</p>
+                <Button
+                    onClick={handleCreate}
+                    className="bg-[#5C61F2] hover:bg-[#4A4ED4] text-white shadow-xl shadow-[#5C61F2]/20 h-16 px-10 rounded-3xl text-[11px] font-black uppercase tracking-widest transition-all active:scale-95 flex items-center gap-3 border-none"
+                >
+                    Add New Device
+                </Button>
             </div>
 
-            <div className="p-6 rounded-2xl bg-zinc-900/20 border border-zinc-800/50 backdrop-blur-sm relative overflow-hidden group">
-               <div className="absolute right-[-10px] top-[-10px] opacity-10 group-hover:opacity-20 transition-opacity">
-                <ShieldAlert className="w-20 h-20 text-rose-500" />
-              </div>
-              <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">System Faults</p>
-              <p className="text-4xl font-black mt-2 text-rose-500">{errorCount}</p>
-              <p className="text-[10px] text-zinc-600 mt-1 uppercase font-bold tracking-tighter">Requires Urgent Service</p>
+            {/* 📋 FLEET METRICS */}
+            {!loading && devices.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <div className="group relative bg-white p-8 rounded-[2.5rem] border border-zinc-100 shadow-sm hover:shadow-xl hover:shadow-emerald-500/5 transition-all duration-500 overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50/30 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-emerald-100/50 transition-colors" />
+                        <div className="relative z-10 text-left">
+                            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center mb-6 border border-emerald-500/20 group-hover:scale-110 transition-transform duration-500">
+                                <Wifi className="w-6 h-6 text-emerald-600" />
+                            </div>
+                            <p className="text-4xl font-black text-zinc-900 tracking-tight leading-none mb-2">{onlineCount}</p>
+                            <p className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Online Devices</p>
+                        </div>
+                    </div>
+
+                    <div className="group relative bg-white p-8 rounded-[2.5rem] border border-zinc-100 shadow-sm hover:shadow-xl hover:shadow-rose-500/5 transition-all duration-500 overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-rose-50/30 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-rose-100/50 transition-colors" />
+                        <div className="relative z-10 text-left">
+                            <div className="w-12 h-12 rounded-2xl bg-rose-500/10 flex items-center justify-center mb-6 border border-rose-500/20 group-hover:scale-110 transition-transform duration-500">
+                                <ShieldAlert className="w-6 h-6 text-rose-600" />
+                            </div>
+                            <p className="text-4xl font-black text-rose-600 tracking-tight leading-none mb-2">{errorCount}</p>
+                            <p className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Critical Issues</p>
+                        </div>
+                    </div>
+
+                    <div className="group relative bg-white p-8 rounded-[2.5rem] border border-zinc-100 shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 transition-all duration-500 overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50/30 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-indigo-100/50 transition-colors" />
+                        <div className="relative z-10 text-left">
+                            <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center mb-6 border border-indigo-500/20 group-hover:scale-110 transition-transform duration-500">
+                                <Activity className="w-6 h-6 text-indigo-600" />
+                            </div>
+                            <p className="text-4xl font-black text-zinc-900 tracking-tight leading-none mb-2">{simulationCount}</p>
+                            <p className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Simulated Devices</p>
+                        </div>
+                    </div>
+                    <div className="group relative bg-white p-8 rounded-[2.5rem] border border-zinc-100 shadow-sm hover:shadow-xl hover:shadow-rose-500/5 transition-all duration-500 overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-rose-50/30 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-rose-100/50 transition-colors" />
+                        <div className="relative z-10 text-left">
+                            <div className="w-12 h-12 rounded-2xl bg-rose-500/10 flex items-center justify-center mb-6 border border-rose-500/20 group-hover:scale-110 transition-transform duration-500">
+                                <ShieldAlert className="w-6 h-6 text-rose-600" />
+                            </div>
+                            <p className="text-4xl font-black text-rose-600 tracking-tight leading-none mb-2">{devices.filter(d => d.status === "ERROR").length}</p>
+                            <p className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Offline Devices</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 🔍 SEARCH BAR */}
+            <div className="flex items-center gap-6 bg-white p-6 rounded-[2.5rem] border border-zinc-100 shadow-sm">
+                <div className="relative flex-1 group">
+                    <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-300 group-focus-within:text-indigo-600 transition-colors" />
+                    <Input
+                        placeholder="SEARCH BY SERIAL, IP, TYPE, OR LOCATION..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-14 bg-zinc-50 border-none focus-visible:ring-0 focus:bg-white focus:ring-2 focus:ring-[#5C61F2]/10 h-16 rounded-2xl transition-all text-[11px] font-black uppercase tracking-widest text-zinc-900 placeholder:text-zinc-400"
+                    />
+                </div>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={fetchData}
+                    className="bg-zinc-50 border border-zinc-100 hover:bg-indigo-50 text-zinc-400 hover:text-indigo-600 h-16 w-16 rounded-2xl transition-all active:scale-95 shadow-sm"
+                    title="Refresh"
+                >
+                    <RefreshCw className={cn("w-5 h-5", loading && "animate-spin")} />
+                </Button>
             </div>
 
-            <div className="p-6 rounded-2xl bg-zinc-900/20 border border-zinc-800/50 backdrop-blur-sm relative overflow-hidden group">
-               <div className="absolute right-[-10px] top-[-10px] opacity-10 group-hover:opacity-20 transition-opacity">
-                <Activity className="w-20 h-20 text-blue-500" />
-              </div>
-              <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Simulation Pulse</p>
-              <p className="text-4xl font-black mt-2 text-blue-500">{simulationCount}</p>
-              <p className="text-[10px] text-zinc-600 mt-1 uppercase font-bold tracking-tighter">Data Generation Engine</p>
+            {/* 📋 DEVICE REGISTRY TABLE */}
+            <div className="bg-white border border-zinc-100 rounded-[3rem] overflow-hidden shadow-sm">
+                <DeviceTable
+                    devices={filteredDevices}
+                    isLoading={loading}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    onRotateKey={handleRotateKey}
+                    onRevokeKey={handleRevokeKey}
+                />
+                
+                <div className="p-10 border-t border-zinc-50 bg-zinc-50/20 text-left">
+                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">System Status Active</p>
+                    <p className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest mt-1">All Devices • Total Count: {devices.length}</p>
+                </div>
             </div>
 
-            <div className="p-6 rounded-2xl bg-zinc-900/20 border border-zinc-800/50 backdrop-blur-sm relative overflow-hidden group">
-               <div className="absolute right-[-10px] top-[-10px] opacity-10 group-hover:opacity-20 transition-opacity">
-                <Zap className="w-20 h-20 text-amber-500" />
-              </div>
-              <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Live Vital Core</p>
-              <p className="text-4xl font-black mt-2 text-amber-500">{devices.length - simulationCount}</p>
-              <p className="text-[10px] text-zinc-600 mt-1 uppercase font-bold tracking-tighter">Precision Field Hardware</p>
-            </div>
-          </div>
-        )}
-
-        {/* Search Bar */}
-        <div className="flex items-center gap-4 bg-zinc-900/40 p-4 rounded-2xl border border-zinc-800/50 backdrop-blur-md">
-          <div className="relative flex-1 group">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-emerald-500 transition-colors" />
-            <Input
-              placeholder="Search by serial number (SN-...), IP address, device type, or bed location..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-black/40 border-zinc-800 focus:border-emerald-500/50 transition-all placeholder:text-zinc-600 h-11"
+            {/* 🛠️ DIALOGS */}
+            <DeviceDialog
+                open={isDialogOpen}
+                onOpenChange={setIsDialogOpen}
+                device={selectedDevice}
+                onSuccess={fetchData}
+                beds={beds}
             />
-          </div>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={fetchData}
-            className="bg-black/40 border-zinc-800 hover:bg-zinc-900 text-zinc-400 h-11 w-11 rounded-xl"
-            title="Scan fleet connectivity"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          </Button>
-        </div>
-
-        {/* Content Section */}
-        <div className="mt-2">
-            <DeviceTable
-                devices={filteredDevices}
-                isLoading={loading}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                onRotateKey={handleRotateKey}
-                onRevokeKey={handleRevokeKey}
+            <DeviceDeleteDialog
+                open={isDeleteDialogOpen}
+                onOpenChange={setIsDeleteDialogOpen}
+                device={selectedDevice}
+                onSuccess={fetchData}
             />
         </div>
-
-        {/* Dialogs */}
-        <DeviceDialog
-          open={isDialogOpen}
-          onOpenChange={setIsDialogOpen}
-          device={selectedDevice}
-          onSuccess={fetchData}
-        />
-        <DeviceDeleteDialog
-          open={isDeleteDialogOpen}
-          onOpenChange={setIsDeleteDialogOpen}
-          device={selectedDevice}
-          onSuccess={fetchData}
-        />
-      </div>
-    </DashboardShell>
-  );
+    );
 }

@@ -14,7 +14,6 @@ class NurseVitalSerializer(serializers.ModelSerializer):
             "patient_name",
             "heart_rate",
             "spo2",
-            "respiratory_rate",
             "temperature",
             "systolic_bp",
             "diastolic_bp",

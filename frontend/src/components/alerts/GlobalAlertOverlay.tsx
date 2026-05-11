@@ -1,6 +1,7 @@
 "use client";
 
 import { useAlertStore } from "@/store/alertStore";
+import { useAuthStore } from "@/store/authStore";
 import { AlertCircle, X, BellRing, User, Cpu, ShieldAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
@@ -8,7 +9,13 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
 export default function GlobalAlertOverlay() {
+  const { user } = useAuthStore();
   const { activeAlerts, removeAlert } = useAlertStore();
+
+  // 🛡️ UNIVERSAL CRISIS ENVIRONMENT
+  // Popups are silenced in favor of the dashboard vignette/status-board logic.
+  // This prevents alert fatigue across all clinical roles (Admin, Doctor, Nurse).
+  return null;
 
   // Show only the 3 most recent alerts
   const notifications = activeAlerts.slice(0, 3);

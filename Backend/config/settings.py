@@ -24,7 +24,7 @@ if not SECRET_KEY:
 
 DEBUG = os.getenv("DEBUG", "True") == "True"
 
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+ALLOWED_HOSTS = ["*"]
 
 # =====================
 # APPLICATIONS
@@ -83,12 +83,16 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
 ]
 CORS_ALLOW_CREDENTIALS = True
 
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
 ]
 
 CORS_ALLOW_HEADERS = [
@@ -382,9 +386,9 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.simulation.tasks.run_simulation",
         "schedule": 1.0,
     },
-    "archive-hot-vitals-10m": {
-        "task": "apps.vitals.tasks.archive_hot_vitals",
-        "schedule": 600.0, # Every 10 minutes
+    "drop-all-vitals-5m": {
+        "task": "apps.vitals.tasks.drop_all_vitals_periodic",
+        "schedule": 300.0, # Every 5 minutes
     },
     "summarize-warm-vitals-1h": {
         "task": "apps.vitals.tasks.summarize_warm_vitals",
@@ -393,6 +397,10 @@ CELERY_BEAT_SCHEDULE = {
     "cleanup-cold-data-24h": {
         "task": "apps.vitals.tasks.cleanup_cold_data",
         "schedule": 86400.0, # Daily
+    },
+    "auto-resolve-stale-alerts-5m": {
+        "task": "apps.alerts.tasks.auto_resolve_stale_alerts",
+        "schedule": 300.0, # Every 5 minutes
     },
 }
 # 🔥 ADD THIS
@@ -407,3 +415,5 @@ CHANNEL_LAYERS = {
         },
     },
 }
+# Force Reload
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000

@@ -84,22 +84,26 @@ export default function PresenceManager() {
                 }
             };
 
-            socket.onclose = () => {
-                console.log("Presence Manager: Disconnected. Validating session with debounce...");
+            socket.onclose = (e) => {
+                console.log(`Presence Manager: Disconnected (Code ${e.code}). Validating session...`);
 
-                // 🛡️ Debounce session validation to prevent spamming during rapid cycles
+                // 🛡️ STOP THE LOOP: If we've had a WebSocket error or sudden close, wait longer
                 if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+
+                const delay = e.code === 1006 ? 10000 : 5000; // 10s delay if abnormal, 5s otherwise
 
                 reconnectTimeoutRef.current = setTimeout(() => {
                     if (accessToken && user) {
+                        // Check if session is still alive before blind reconnect
                         api.get("accounts/online-users/").then(() => {
                              connect();
                         }).catch((err) => {
-                            console.log("Presence Manager: Session check failed, awaiting natural refresh.");
+                             console.warn("Presence Manager: Session invalid. Awaiting auth cycle.");
                         });
                     }
-                }, 3000); // 🕒 Delayed reconnection & validation
+                }, delay); 
             };
+
 
             socket.onerror = (err) => {
                 console.error("Presence Manager: WebSocket error. Closing to trigger reconnection...");

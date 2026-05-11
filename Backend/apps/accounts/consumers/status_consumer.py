@@ -9,6 +9,7 @@ User = get_user_model()
 
 class StatusConsumer(AsyncWebsocketConsumer):
     async def connect(self):
+        print(f"DEBUG: [STATUS_SOCKET] Connection attempt from {self.scope.get('user')}")
         self.user = self.scope.get("user")
         
         # Security: only authenticated users can join the status network
@@ -75,9 +76,6 @@ class StatusConsumer(AsyncWebsocketConsumer):
                 self.group_name,
                 self.channel_name
             )
-
-            # 🕒 GRACE PERIOD: Wait 3 seconds
-            await asyncio.sleep(3)
 
             # Mark this SPECIFIC tab as offline
             is_truly_offline = await database_sync_to_async(PresenceService.go_offline)(

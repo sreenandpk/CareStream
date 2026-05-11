@@ -114,7 +114,7 @@ export default function DeviceDialog({
         setBeds(response.data.data || response.data.results || []);
       }
     } catch (error) {
-      toast.error("Failed to load hospital beds");
+      toast.error("Failed to load beds");
     }
   };
 
@@ -137,14 +137,14 @@ export default function DeviceDialog({
 
       if (device) {
         await api.put(`devices/admin/devices/${device.id}/`, payload);
-        toast.success("Device configuration updated successfully.");
+        toast.success("Device updated successfully.");
         onSuccess();
         onOpenChange(false);
       } else {
         const res = await api.post("devices/admin/devices/", payload);
         if (res.data.success) {
           setNewlyCreatedKey(res.data.data.api_key);
-          toast.success("New monitoring node deployed to fleet.");
+          toast.success("New device added.");
           onSuccess();
           // Don't close immediately if we have a new key to show
         }
@@ -152,7 +152,7 @@ export default function DeviceDialog({
       setShowSafetyConfirm(false); // 🏥 Close Safety Dialog
     } catch (error: any) {
       const rawError = error.response?.data?.message || error.response?.data?.error;
-      let message = "Safety Check: Deployment failed.";
+      let message = "Failed to save device.";
 
       if (typeof rawError === "string") {
         message = rawError;
@@ -174,67 +174,68 @@ export default function DeviceDialog({
         if (!val) setNewlyCreatedKey(null);
         onOpenChange(val);
     }}>
-      <DialogContent className="sm:max-w-[440px] bg-zinc-950 border-zinc-800 text-zinc-100 shadow-2xl rounded-[2.5rem] p-0 overflow-hidden">
-        <div className="p-8 pb-6 border-b border-zinc-900 bg-zinc-900/10 flex items-center justify-between">
-          <DialogHeader>
-            <DialogTitle className="text-3xl font-black uppercase tracking-tighter">
-              {device ? "Update Node" : "Deploy Node"}
-            </DialogTitle>
-            <p className="text-zinc-500 text-xs font-black uppercase tracking-[0.2em] mt-2 italic">
-              Hardware Layer Assignment
-            </p>
-          </DialogHeader>
-          <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center">
-             <Cpu className="w-6 h-6 text-zinc-500" />
+      <DialogContent className="sm:max-w-[500px] bg-white border-none text-zinc-900 shadow-2xl rounded-[2.5rem] p-0 overflow-hidden">
+        <DialogHeader className="p-8 pb-4 bg-indigo-50/50 border-b border-indigo-100">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-[#5C61F2]/10 flex items-center justify-center border border-[#5C61F2]/20">
+              <Cpu className="w-6 h-6 text-[#5C61F2]" />
+            </div>
+            <div className="flex flex-col text-left">
+              <DialogTitle className="text-2xl font-black tracking-tight text-zinc-900">
+                {device ? "Edit Device" : "Add New Device"}
+              </DialogTitle>
+              <p className="text-[#5C61F2] text-[11px] font-black uppercase tracking-widest mt-0.5">
+                Device Details & Deployment
+              </p>
+            </div>
           </div>
-        </div>
+        </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="p-8 pt-6 space-y-6">
-          <div className="space-y-5">
-            {/* Dual Identity Fields */}
-            <div className="grid grid-cols-1 gap-4">
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-700 ml-1">
-                  Clinician Identity (Label)
+        <form onSubmit={handleSubmit} className="p-8 pt-6 space-y-8">
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 gap-6">
+              <div className="space-y-2 text-left">
+                <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-400 ml-1">
+                  Display Name
                 </Label>
                 <Input
                   placeholder="e.g. ICU-NORTH-01"
                   value={formData.monitor_label}
                   onChange={(e) => setFormData({ ...formData, monitor_label: e.target.value })}
-                  className="bg-black/40 border-zinc-900 text-white h-12 rounded-xl text-sm font-bold placeholder:text-zinc-800 focus:border-rose-500/50 transition-all shadow-inner"
+                  className="bg-zinc-50 border-none focus-visible:ring-2 focus-visible:ring-[#5C61F2]/10 h-14 rounded-2xl font-black text-zinc-900 placeholder:text-zinc-300 transition-all uppercase tracking-wider"
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-700 ml-1">
-                  System Serial (Immutable)
+              <div className="space-y-2 text-left">
+                <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-400 ml-1">
+                  Serial Number
                 </Label>
                 <Input
                   placeholder="e.g. SN-9920-X"
                   value={formData.serial_number}
                   onChange={(e) => setFormData({ ...formData, serial_number: e.target.value })}
-                  className="bg-black/40 border-zinc-900 text-zinc-500 h-10 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] placeholder:text-zinc-800 focus:border-rose-500/50 transition-all disabled:opacity-50"
+                  className="bg-zinc-50 border-none focus-visible:ring-2 focus-visible:ring-[#5C61F2]/10 h-14 rounded-2xl font-black text-zinc-900 uppercase tracking-[0.2em] text-xs transition-all"
                   required
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-700 ml-1">
-                  Location / Bed
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-2 text-left">
+                <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-400 ml-1">
+                  Assigned Bed
                 </Label>
                 <Select
                   value={formData.bed || "none"}
                   onValueChange={(val) => setFormData({ ...formData, bed: val })}
                 >
-                  <SelectTrigger className="bg-black/40 border-zinc-900 h-14 rounded-2xl font-black text-xs uppercase tracking-tight">
+                  <SelectTrigger className="bg-zinc-50 border-none focus:ring-2 focus:ring-[#5C61F2]/10 h-14 rounded-2xl font-bold text-zinc-900 px-6 transition-all">
                     <SelectValue placeholder="Storage" />
                   </SelectTrigger>
-                  <SelectContent className="bg-zinc-950 border-zinc-900 text-white font-black">
-                    <SelectItem value="none">None (Storage)</SelectItem>
+                  <SelectContent className="bg-white border-none shadow-2xl rounded-2xl p-2">
+                    <SelectItem value="none" className="rounded-xl font-bold text-zinc-500">Inventory / Storage</SelectItem>
                     {(beds || []).map((bed) => (
-                      <SelectItem key={bed.id} value={bed.id.toString()}>
+                      <SelectItem key={bed.id} value={bed.id.toString()} className="rounded-xl font-bold text-zinc-900">
                         Bed {bed.bed_number}
                       </SelectItem>
                     ))}
@@ -242,131 +243,133 @@ export default function DeviceDialog({
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-700 ml-1">
-                  Monitor Type
+              <div className="space-y-2 text-left">
+                <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-400 ml-1">
+                  Device Type
                 </Label>
                 <Select
                   value={formData.device_type}
                   onValueChange={(val) => setFormData({ ...formData, device_type: val })}
                 >
-                  <SelectTrigger className="bg-black/40 border-zinc-900 h-14 rounded-2xl font-black text-[10px] uppercase tracking-tighter">
+                  <SelectTrigger className="bg-zinc-50 border-none focus:ring-2 focus:ring-[#5C61F2]/10 h-14 rounded-2xl font-bold text-zinc-900 px-6 transition-all">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-zinc-950 border-zinc-900 text-white font-black">
-                    <SelectItem value="ICU_MONITOR">Advanced (ICU)</SelectItem>
-                    <SelectItem value="PATIENT_MONITOR">Standard View</SelectItem>
-                    <SelectItem value="WEARABLE_SENSOR">Wearable</SelectItem>
+                  <SelectContent className="bg-white border-none shadow-2xl rounded-2xl p-2">
+                    <SelectItem value="ICU_MONITOR" className="rounded-xl font-bold text-zinc-900">Advanced (ICU)</SelectItem>
+                    <SelectItem value="PATIENT_MONITOR" className="rounded-xl font-bold text-zinc-900">Standard Monitor</SelectItem>
+                    <SelectItem value="WEARABLE_SENSOR" className="rounded-xl font-bold text-zinc-900">Mobile Sensor</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
-          </div>
 
-          <div className="p-6 bg-zinc-900/20 rounded-[1.8rem] border border-zinc-900 space-y-4 shadow-inner">
-            <div className="flex items-center gap-2">
-              <Zap className="w-3.5 h-3.5 text-rose-500" />
-              <span className="text-[9px] font-black uppercase tracking-widest text-zinc-600">Operational Logic</span>
-            </div>
+            <div className="p-6 bg-zinc-50 rounded-[2rem] border border-zinc-100 space-y-4">
+              <div className="flex items-center gap-2">
+                <Zap className="w-3.5 h-3.5 text-[#5C61F2]" />
+                <span className="text-[9px] font-black uppercase tracking-widest text-zinc-400">Mode & Data Source</span>
+              </div>
 
-            <div className="space-y-3">
-              <Select
-                value={formData.mode}
-                onValueChange={(val) => setFormData({ ...formData, mode: val })}
-              >
-                <SelectTrigger className="bg-black/60 border-zinc-900 h-12 rounded-xl font-bold text-xs uppercase tracking-tight">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-zinc-950 border-zinc-900 text-white">
-                  <SelectItem value="REAL" className="font-black text-rose-500">Live Hardware Feed</SelectItem>
-                  <SelectItem value="SIMULATION" className="font-black text-blue-500">Clinical Simulator</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {formData.mode === "SIMULATION" && (
-                <motion.div 
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    className="overflow-hidden"
+              <div className="space-y-3">
+                <Select
+                  value={formData.mode}
+                  onValueChange={(val) => setFormData({ ...formData, mode: val })}
                 >
-                  <Select
-                    value={formData.simulation_mode}
-                    onValueChange={(val) => setFormData({ ...formData, simulation_mode: val })}
-                  >
-                    <SelectTrigger className="bg-black/60 border-zinc-900 h-12 rounded-xl font-black text-[10px] uppercase tracking-tight mt-2">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-zinc-950 border-zinc-900 text-white">
-                      <SelectItem value="GLOBAL">Default State</SelectItem>
-                      <SelectItem value="NORMAL" className="text-emerald-500 font-bold">Stable Rhythms</SelectItem>
-                      <SelectItem value="CRITICAL" className="text-rose-500 font-black italic">Critical Crisis</SelectItem>
-                      <SelectItem value="RECOVERY" className="text-blue-400 font-bold">Recovery Curve</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </motion.div>
-              )}
+                  <SelectTrigger className="bg-white border-zinc-200 h-12 rounded-xl font-black text-[10px] uppercase tracking-widest">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border-none shadow-2xl rounded-2xl p-2">
+                    <SelectItem value="REAL" className="rounded-xl font-black text-rose-600">Live Hardware</SelectItem>
+                    <SelectItem value="SIMULATION" className="rounded-xl font-black text-[#5C61F2]">Simulated Data</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <AnimatePresence>
+                  {formData.mode === "SIMULATION" && (
+                    <motion.div 
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="overflow-hidden"
+                    >
+                      <Select
+                        value={formData.simulation_mode}
+                        onValueChange={(val) => setFormData({ ...formData, simulation_mode: val })}
+                      >
+                        <SelectTrigger className="bg-white border-zinc-200 h-12 rounded-xl font-black text-[10px] uppercase tracking-tight mt-2 border-dashed">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-white border-none shadow-2xl rounded-2xl p-2">
+                          <SelectItem value="GLOBAL" className="rounded-xl font-bold">Normal</SelectItem>
+                          <SelectItem value="NORMAL" className="rounded-xl text-emerald-600 font-bold">Healthy</SelectItem>
+                          <SelectItem value="CRITICAL" className="rounded-xl text-rose-600 font-black italic tracking-tight">Emergency</SelectItem>
+                          <SelectItem value="RECOVERY" className="rounded-xl text-[#5C61F2] font-bold">Recovery</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
-          </div>
 
-          <div className="flex items-center justify-between p-4 bg-emerald-500/5 rounded-2xl border border-emerald-500/10 shadow-inner">
-             <div className="flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                <span className="text-[10px] font-black uppercase tracking-[0.1em] text-zinc-500 underline decoration-emerald-500/20 underline-offset-4">Enable Monitoring</span>
-             </div>
-             <Switch
-                checked={formData.is_active}
-                onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
-                className="data-[state=checked]:bg-emerald-500"
-              />
-          </div>
-
-          <AnimatePresence>
             {newlyCreatedKey && (
-              <motion.div 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl space-y-2 relative overflow-hidden group"
-              >
+              <div className="p-6 bg-emerald-50 border border-emerald-100 rounded-[2rem] space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Hardware Access Token</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Device Key</span>
                   <Button 
                     type="button"
                     variant="ghost" 
-                    className="h-6 px-2 text-[8px] font-black uppercase text-emerald-500 hover:bg-emerald-500/10"
+                    className="h-8 px-3 rounded-lg text-[9px] font-black uppercase text-emerald-600 hover:bg-emerald-100 transition-all"
                     onClick={() => {
                         navigator.clipboard.writeText(newlyCreatedKey);
-                        toast.success("Key copied to clipboard");
+                        toast.success("Key copied.");
                     }}
                   >
                     Copy Key
                   </Button>
                 </div>
-                <div className="bg-black/60 p-3 rounded-xl font-mono text-[10px] text-zinc-300 break-all select-all">
+                <div className="bg-white border border-emerald-100 p-4 rounded-xl font-mono text-[11px] text-emerald-900 break-all select-all shadow-sm">
                   {newlyCreatedKey}
                 </div>
-                <p className="text-[8px] text-emerald-500/60 font-medium italic">
-                  ⚠ Save this key now. It will be masked in the dashboard for clinical security.
+                <p className="text-[9px] text-emerald-600/60 font-black uppercase tracking-widest leading-tight">
+                  ⚠ Safeguard this token. It will be permanently masked after initialization.
                 </p>
-              </motion.div>
+              </div>
             )}
-          </AnimatePresence>
 
-          <DialogFooter className="gap-3 pt-2">
+            <div className="flex items-center justify-between p-6 bg-zinc-50/50 rounded-[2.5rem] border border-dashed border-zinc-200">
+              <div className="space-y-1 text-left">
+                <p className="text-[10px] font-black text-zinc-900 uppercase tracking-widest">Active Status</p>
+                <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest opacity-60">Allow device to send data.</p>
+              </div>
+              <Switch
+                checked={formData.is_active}
+                onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+                className="data-[state=checked]:bg-[#5C61F2] scale-110"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-3 pt-6 border-t border-zinc-100">
             <Button
               type="button"
-              variant="outline"
+              variant="ghost"
               onClick={() => onOpenChange(false)}
-              className="flex-1 rounded-2xl h-14 border-zinc-900 text-zinc-600 font-black uppercase text-[10px] tracking-widest hover:bg-zinc-900 hover:text-white transition-all"
+              className="h-14 px-8 rounded-2xl font-black text-[11px] uppercase tracking-widest text-zinc-400 hover:text-zinc-900 transition-all"
             >
-              Cancel
+              Discard
             </Button>
             <Button
               type="submit"
               disabled={loading}
-              className="flex-[2] rounded-2xl h-14 bg-white text-zinc-950 hover:bg-zinc-100 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-white/5 active:scale-95 transition-all"
+              className="h-14 px-10 bg-indigo-600 hover:bg-indigo-700 text-white shadow-xl shadow-indigo-600/20 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all active:scale-95 disabled:opacity-50"
             >
-              {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {device ? "Save Changes" : "Deploy"}
+              {loading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : device ? (
+                "Save Changes"
+              ) : (
+                "Create Device"
+              )}
             </Button>
           </DialogFooter>
         </form>
@@ -374,35 +377,32 @@ export default function DeviceDialog({
     </Dialog>
 
     <AlertDialog open={showSafetyConfirm} onOpenChange={setShowSafetyConfirm}>
-      <AlertDialogContent className="bg-zinc-950 border-zinc-800 text-zinc-100 rounded-[2rem] p-8 shadow-2xl">
+      <AlertDialogContent className="bg-white border-none rounded-[2.5rem] p-8 shadow-2xl overflow-hidden max-w-[500px]">
         <AlertDialogHeader>
-          <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-4">
-            <AlertTriangle className="w-6 h-6 text-amber-500" />
+          <div className="w-16 h-16 rounded-2xl bg-amber-50 flex items-center justify-center mb-6 border border-amber-100">
+            <AlertTriangle className="w-8 h-8 text-amber-500" />
           </div>
-          <AlertDialogTitle className="text-2xl font-black uppercase tracking-tighter">
-            Safety Confirmation Required
+          <AlertDialogTitle className="text-3xl font-black tracking-tight text-zinc-900 leading-tight">
+            Switch to <br/>Simulation?
           </AlertDialogTitle>
-          <AlertDialogDescription className="text-zinc-400 font-medium leading-relaxed pt-2">
-            ⚠ This will replace <strong className="text-white">real patient data</strong> with simulated values. 
-            This action is for testing/training purposes only and will sever the live hardware link.
+          <AlertDialogDescription className="text-zinc-500 font-bold text-sm leading-relaxed pt-2">
+            Warning: Switching from <span className="text-rose-500 underline decoration-2 underline-offset-4">Live Hardware</span> to <span className="text-[#5C61F2] underline decoration-2 underline-offset-4">Simulation</span> will stop real patient data.
+            <br/><br/>
+            This action is for testing or training only.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter className="gap-3 mt-6">
-          <AlertDialogCancel className="rounded-xl h-12 border-zinc-900 bg-transparent text-zinc-500 hover:bg-zinc-900 hover:text-white font-bold px-6 transition-all">
+        <AlertDialogFooter className="gap-3 mt-8 pt-6 border-t border-zinc-100">
+          <AlertDialogCancel className="h-14 px-8 rounded-2xl font-black text-[11px] uppercase tracking-widest text-zinc-400 border-none bg-transparent hover:bg-zinc-50 hover:text-zinc-900 transition-all">
             Cancel
           </AlertDialogCancel>
           <AlertDialogAction 
             onClick={() => {
-              // 🛡️ Set safety confirm to true so the guard in handleSubmit is bypassed
-              setShowSafetyConfirm(true);
-              // Trigger actual submission in next tick
-              setTimeout(() => {
-                handleSubmit();
-              }, 0);
+              setShowSafetyConfirm(false);
+              setTimeout(() => { handleSubmit(); }, 0);
             }}
-            className="rounded-xl h-12 bg-amber-500 text-black hover:bg-amber-600 font-black uppercase text-xs tracking-widest px-8 transition-all shadow-lg shadow-amber-500/10"
+            className="h-14 px-10 bg-amber-500 hover:bg-amber-600 text-white shadow-xl shadow-amber-500/20 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all active:scale-95"
           >
-            Confirm Switch
+            Switch Now
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

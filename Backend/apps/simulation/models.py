@@ -49,8 +49,6 @@ class SimulationConfig(BaseModel):
     diastolic_bp_min = models.IntegerField(default=70)
     diastolic_bp_max = models.IntegerField(default=90)
 
-    respiratory_rate_min = models.IntegerField(default=12)
-    respiratory_rate_max = models.IntegerField(default=20)
 
     temperature_min = models.FloatField(default=36.5)
     temperature_max = models.FloatField(default=37.5)

@@ -44,83 +44,67 @@ api.interceptors.request.use(
     }
 );
 
+export const refreshToken = async () => {
+    if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+            failedQueue.push({ resolve, reject });
+        });
+    }
+
+    if (refreshCooldown) return null;
+
+    isRefreshing = true;
+    try {
+        const res = await axios.post(
+            `${api.defaults.baseURL}accounts/refresh/`,
+            {},
+            { withCredentials: true }
+        );
+
+        const { access } = res.data.data;
+        useAuthStore.getState().setAccessToken(access);
+        processQueue(null, access);
+        return access;
+    } catch (refreshError: any) {
+        const status = refreshError.response?.status;
+        
+        if (status === 429) {
+            refreshCooldown = true;
+            setTimeout(() => { refreshCooldown = false; }, 5000);
+        }
+
+        processQueue(refreshError, null);
+        
+        if (status === 401 || status === 400) {
+            useAuthStore.getState().logout();
+            if (typeof window !== "undefined") {
+                window.location.href = "/login";
+            }
+        }
+        throw refreshError;
+    } finally {
+        isRefreshing = false;
+    }
+};
+
 api.interceptors.response.use(
     (response) => response,
     async (error) => {
         const originalRequest = error.config;
-
-        // If error is 401 or 403 and not already retried
         const isAuthError = error.response?.status === 401 || error.response?.status === 403;
 
         if (isAuthError && !originalRequest._retry) {
-            // If we are currently rate limited, don't even try to refresh
-            if (refreshCooldown) {
-                console.warn("Axios: Refresh is on cooldown due to rate limiting. Rejecting request.");
-                return Promise.reject(error);
-            }
-
-            if (isRefreshing) {
-                return new Promise((resolve, reject) => {
-                    failedQueue.push({ resolve, reject });
-                })
-                    .then((token) => {
-                        originalRequest.headers.Authorization = `Bearer ${token}`;
-                        return api(originalRequest);
-                    })
-                    .catch((err) => Promise.reject(err));
-            }
-
             originalRequest._retry = true;
-            isRefreshing = true;
-
             try {
-                // Call the refresh endpoint (which reads the 'refresh' cookie)
-                const res = await axios.post(
-                    `${api.defaults.baseURL}accounts/refresh/`,
-                    {},
-                    { withCredentials: true }
-                );
-
-                const { access } = res.data.data;
-                useAuthStore.getState().setAccessToken(access);
-                
-                processQueue(null, access);
-                
-                originalRequest.headers.Authorization = `Bearer ${access}`;
-                return api(originalRequest);
-            } catch (refreshError: any) {
-                const status = refreshError.response?.status;
-                
-                if (status === 429) {
-                    console.error("Axios: Token refresh rate limited (429). Triggering 5s cooldown.");
-                    refreshCooldown = true;
-                    setTimeout(() => { 
-                        refreshCooldown = false; 
-                        console.log("Axios: Refresh cooldown ended.");
-                    }, 5000);
+                const access = await refreshToken();
+                if (access) {
+                    originalRequest.headers.Authorization = `Bearer ${access}`;
+                    return api(originalRequest);
                 }
-
-                processQueue(refreshError, null);
-                
-                // ONLY force logout if the session is truly dead
-                // 401 (Unauthorized) and 400 (Bad Request/Invalid Token) from the refresh endpoint are fatal.
-                const isFatalAuthError = status === 401 || status === 400;
-
-                if (isFatalAuthError) {
-                    console.error("Axios: Session expired or invalid (400/401), logging out...");
-                    useAuthStore.getState().logout();
-                    if (typeof window !== "undefined") {
-                        window.location.href = "/login";
-                    }
-                } else {
-                    console.error(`Axios: Token refresh failed (Status: ${status}), preserving session for retry later.`);
-                }
-                return Promise.reject(refreshError);
-            } finally {
-                isRefreshing = false;
+            } catch (e) {
+                return Promise.reject(e);
             }
         }
-
         return Promise.reject(error);
     }
 );

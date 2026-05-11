@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import DashboardShell from "@/components/DashboardShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Search, Map, RefreshCw } from "lucide-react";
+import { cn } from "@/lib/utils";
 import WardTable from "@/components/wards/WardTable";
 import WardDialog from "@/components/wards/WardDialog";
+import NurseAssignmentDialog from "@/components/wards/NurseAssignmentDialog";
 import WardDeleteDialog from "@/components/wards/WardDeleteDialog";
 import PaginationController from "@/components/ui/PaginationController";
 import api from "@/lib/axios";
@@ -17,6 +18,7 @@ interface Ward {
   name: string;
   floor: number;
   description: string | null;
+  nurses?: number[];
   is_active: boolean;
   created_at: string;
 }
@@ -29,6 +31,7 @@ export default function WardsPage() {
   
   // Dialog States
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedWard, setSelectedWard] = useState<Ward | null>(null);
 
@@ -82,6 +85,12 @@ export default function WardsPage() {
     setIsDialogOpen(true);
   };
 
+  const handleAssign = (ward: Ward) => {
+    setSelectedWard(ward);
+    setIsAssignDialogOpen(true);
+  };
+
+
   const handleDelete = (ward: Ward) => {
     setSelectedWard(ward);
     setIsDeleteDialogOpen(true);
@@ -92,102 +101,111 @@ export default function WardsPage() {
     setIsDialogOpen(true);
   };
 
-  return (
-    <DashboardShell>
-      <div className="p-8 space-y-8 min-h-full max-w-7xl mx-auto">
-        {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-500/10 rounded-lg">
-                <Map className="w-6 h-6 text-blue-500" />
-              </div>
-              <h1 className="text-4xl font-extrabold tracking-tight text-zinc-100">
-                Ward Management
-              </h1>
-            </div>
-            <p className="text-zinc-500 mt-2 font-medium italic">
-              Configure and oversee facility wards and clinical units.
-            </p>
-          </div>
-          <Button
-            onClick={handleCreate}
-            className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Ward
-          </Button>
-        </div>
+    return (
+        <div className="p-10 pt-16 space-y-12 min-h-screen bg-zinc-50/30 w-full max-w-[1600px] mx-auto text-left">
+            {/* 🛡️ PREMIUM HEADER */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
+                <div className="flex flex-col text-left">
+                    <h1 className="text-4xl font-black tracking-tight text-zinc-900 leading-none uppercase">
+                        Hospital <span className="text-[#5C61F2]">Wards</span>
+                    </h1>
+                </div>
 
-        {/* Search and Filters Bar */}
-        <div className="flex items-center gap-4 bg-zinc-900/40 p-4 rounded-xl border border-zinc-800/50 backdrop-blur-md">
-          <div className="relative flex-1 group">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-blue-500 transition-colors" />
-            <Input
-              placeholder="Search by ward name or floor..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-black/40 border-zinc-800 focus:border-blue-500/50 transition-all placeholder:text-zinc-600"
+                <Button
+                    onClick={handleCreate}
+                    className="bg-[#5C61F2] hover:bg-[#4A4ED4] text-white shadow-xl shadow-[#5C61F2]/20 h-16 px-10 rounded-3xl text-[11px] font-black uppercase tracking-widest transition-all active:scale-95 flex items-center gap-3 border-none"
+                >
+                    Add New Ward
+                </Button>
+            </div>
+
+            {/* 🔍 SEARCH BAR */}
+            <div className="flex items-center gap-6 bg-white p-6 rounded-[2.5rem] border border-zinc-100 shadow-sm">
+                <div className="relative flex-1 group">
+                    <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-300 group-focus-within:text-indigo-600 transition-colors" />
+                    <Input
+                        placeholder="SEARCH BY WARD NAME, FLOOR, OR DESCRIPTION..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-14 bg-zinc-50 border-none focus-visible:ring-0 focus:bg-white focus:ring-2 focus:ring-[#5C61F2]/10 h-16 rounded-2xl transition-all text-[11px] font-black uppercase tracking-widest text-zinc-900 placeholder:text-zinc-400"
+                    />
+                </div>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleRefresh}
+                    className="bg-zinc-50 border border-zinc-100 hover:bg-indigo-50 text-zinc-400 hover:text-indigo-600 h-16 w-16 rounded-2xl transition-all active:scale-95 shadow-sm"
+                    title="Refresh"
+                >
+                    <RefreshCw className={cn("w-5 h-5", loading && "animate-spin")} />
+                </Button>
+            </div>
+
+            {/* 📋 WARD REGISTRY TABLE */}
+            <div className="bg-white border border-zinc-100 rounded-[3rem] overflow-hidden shadow-sm">
+                <WardTable
+                    wards={wards}
+                    isLoading={loading}
+                    onEdit={handleEdit}
+                    onAssign={handleAssign}
+                    onDelete={handleDelete}
+                />
+                
+                <div className="p-10 border-t border-zinc-50 bg-zinc-50/20">
+                    <PaginationController 
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                        isLoading={loading}
+                    />
+                </div>
+            </div>
+
+            {/* 📊 SUMMARY METRICS */}
+            {!loading && (wards?.length ?? 0) > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-2xl">
+                    <div className="bg-white p-8 rounded-[2.5rem] border border-zinc-100 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-2">Total Wards</p>
+                            <p className="text-4xl font-black text-zinc-900 tracking-tighter">{totalCount}</p>
+                        </div>
+                        <div className="w-12 h-12 rounded-2xl bg-[#5C61F2]/5 flex items-center justify-center border border-[#5C61F2]/10">
+                            <Map className="w-6 h-6 text-[#5C61F2]" />
+                        </div>
+                    </div>
+                    <div className="bg-white p-8 rounded-[2.5rem] border border-zinc-100 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-2">Active Wards</p>
+                            <p className="text-4xl font-black text-emerald-500 tracking-tighter">
+                                {wards?.filter(w => w.is_active).length ?? 0}
+                            </p>
+                        </div>
+                        <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center border border-emerald-100">
+                            <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" />
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 🛠️ DIALOGS */}
+            <WardDialog
+                open={isDialogOpen}
+                onOpenChange={setIsDialogOpen}
+                ward={selectedWard}
+                onSuccess={handleRefresh}
             />
-          </div>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={handleRefresh}
-            className="bg-black/40 border-zinc-800 hover:bg-zinc-900 text-zinc-400"
-            title="Refresh list"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          </Button>
+            <WardDeleteDialog
+                open={isDeleteDialogOpen}
+                onOpenChange={setIsDeleteDialogOpen}
+                ward={selectedWard}
+                onSuccess={handleRefresh}
+            />
+            <NurseAssignmentDialog
+                open={isAssignDialogOpen}
+                onOpenChange={setIsAssignDialogOpen}
+                ward={selectedWard}
+                onSuccess={handleRefresh}
+            />
         </div>
-
-        {/* Content Section */}
-        <div className="mt-6 bg-zinc-900/20 border border-zinc-800/50 rounded-xl overflow-hidden backdrop-blur-sm">
-          <WardTable
-            wards={wards}
-            isLoading={loading}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-          />
-          
-          <PaginationController 
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
-            isLoading={loading}
-          />
-        </div>
-
-        {/* Stats Summary (Optional/Premium touch) */}
-        {!loading && (wards?.length ?? 0) > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
-            <div className="p-4 rounded-xl bg-zinc-900/20 border border-zinc-800/30">
-              <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Total Wards</p>
-              <p className="text-2xl font-bold mt-1 text-zinc-200">{wards?.length ?? 0}</p>
-            </div>
-            <div className="p-4 rounded-xl bg-zinc-900/20 border border-zinc-800/30">
-              <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Active Units</p>
-              <p className="text-2xl font-bold mt-1 text-emerald-500">
-                {wards?.filter(w => w.is_active).length ?? 0}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Dialogs */}
-        <WardDialog
-          open={isDialogOpen}
-          onOpenChange={setIsDialogOpen}
-          ward={selectedWard}
-          onSuccess={fetchWards}
-        />
-        <WardDeleteDialog
-          open={isDeleteDialogOpen}
-          onOpenChange={setIsDeleteDialogOpen}
-          ward={selectedWard}
-          onSuccess={fetchWards}
-        />
-      </div>
-    </DashboardShell>
-  );
+    );
 }

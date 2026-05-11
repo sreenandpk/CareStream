@@ -15,6 +15,12 @@ class AdminPatientSerializer(serializers.ModelSerializer):
         allow_null=True
     )
 
+    primary_nurse = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.filter(role="NURSE"),
+        required=False,
+        allow_null=True
+    )
+
     mode = serializers.ChoiceField(
         choices=Patient.MODE_CHOICES,
         required=False
@@ -37,11 +43,15 @@ class AdminPatientSerializer(serializers.ModelSerializer):
             "id",
             "bed",
             "doctor",  
+            "primary_nurse",
             "mode",     
             "name",
             "age",
             "gender",
             "diagnosis",
+            "clinical_condition",
+            "ai_condition_summary",
+            "last_ai_assessment",
             "admission_date",
             "discharge_date",
             "is_active",
@@ -82,5 +92,13 @@ class AdminPatientSerializer(serializers.ModelSerializer):
         if value and value.role != "DOCTOR":
             raise serializers.ValidationError(
                 "Assigned user must be a doctor"
+            )
+        return value
+
+    # 🔥 NURSE VALIDATION
+    def validate_primary_nurse(self, value):
+        if value and value.role != "NURSE":
+            raise serializers.ValidationError(
+                "Assigned user must be a nurse"
             )
         return value

@@ -2,11 +2,11 @@
 
 import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import api from "@/lib/axios";
 import { Button } from "@/components/ui/button";
 import ChangePasswordModal from "@/components/ChangePasswordModal";
-import DashboardShell from "@/components/DashboardShell";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { 
     LayoutDashboard, 
@@ -25,6 +25,7 @@ import {
     UserPlus,
     RefreshCw
 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminDashboard() {
     const { user, _hasHydrated, logout } = useAuthStore();
@@ -97,208 +98,240 @@ export default function AdminDashboard() {
     if (!_hasHydrated) return null;
 
     return (
-        <DashboardShell>
-            <div className="p-8 space-y-10 min-h-full max-w-[1600px] mx-auto">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <div className="flex items-center gap-2 mb-1">
-                            <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse" />
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500/80 italic">Unified Command Active</span>
-                        </div>
-                        <h1 className="text-5xl font-black tracking-tighter uppercase text-zinc-100 italic">
-                            System <span className="text-rose-500">Overview</span>
+        <div className="p-10 pt-16 space-y-12 w-full max-w-[1600px] mx-auto min-h-screen bg-white">
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-6">
+                    <div className="text-left">
+                        <h1 className="text-4xl font-black tracking-tight text-zinc-900 leading-none uppercase">
+                            Admin <span className="text-[#5C61F2]">Dashboard</span>
                         </h1>
-                        <p className="text-zinc-500 mt-2 font-medium italic opacity-80">Infrastructure & clinical safety monitoring for CareStream Core.</p>
                     </div>
-                    <div className="flex gap-4">
+                </div>
+
+                <div className="flex items-center gap-4">
+                    <Button 
+                        onClick={() => { fetchStats(); fetchRecentLogs(); }}
+                        disabled={loadingStats || loadingLogs}
+                        variant="outline"
+                        className="rounded-2xl bg-white border-zinc-200 h-14 px-8 hover:bg-zinc-50 font-black text-[11px] uppercase tracking-widest text-zinc-600 transition-all shadow-sm"
+                    >
+                        <RefreshCw className={cn("w-4 h-4 mr-3", (loadingStats || loadingLogs) && "animate-spin text-[#5C61F2]")} />
+                        Refresh Data
+                    </Button>
+                </div>
+            </div>
+
+            {/* 📊 Core Performance Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div 
+                    onClick={() => router.push("/dashboard/admin/users")}
+                    className="group relative bg-gradient-to-br from-[#5C61F2]/5 to-white p-8 rounded-[2.5rem] border border-[#5C61F2]/20 hover:shadow-2xl hover:shadow-[#5C61F2]/10 transition-all duration-500 cursor-pointer active:scale-[0.98] h-[220px] flex flex-col justify-between overflow-hidden"
+                >
+                    <div className="flex justify-between items-start relative z-10">
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#5C61F2]">Staff Members</span>
+                        <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-500 border border-[#5C61F2]/10">
+                            <Users className="w-5 h-5 text-[#5C61F2]" />
+                        </div>
+                    </div>
+                    <div className="relative z-10">
+                        <p className="text-5xl font-black text-zinc-900 tracking-tighter leading-none mb-3">{stats.total_users}</p>
+                        <p className="text-[10px] font-black text-[#5C61F2]/60 uppercase tracking-widest">Active Staff</p>
+                    </div>
+                </div>
+
+                {/* 🏥 Occupancy Card */}
+                <div 
+                    onClick={() => router.push("/dashboard/admin/patients")}
+                    className="group relative bg-gradient-to-br from-emerald-50 to-white p-8 rounded-[2.5rem] border border-emerald-100 hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-500 cursor-pointer active:scale-[0.98] h-[220px] flex flex-col justify-between overflow-hidden"
+                >
+                    <div className="flex justify-between items-start relative z-10">
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600">Hospital Patients</span>
+                        <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-500 border border-emerald-50">
+                            <Activity className="w-5 h-5 text-emerald-600" />
+                        </div>
+                    </div>
+                    <div className="relative z-10">
+                        <p className="text-5xl font-black text-emerald-950 tracking-tighter leading-none mb-3">
+                            {stats.occupied_beds}<span className="text-emerald-300 text-3xl ml-1">/{stats.total_beds}</span>
+                        </p>
+                        <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Beds Occupied</p>
+                    </div>
+                </div>
+
+                {/* 🔌 Infrastructure Card */}
+                <div 
+                    onClick={() => router.push("/dashboard/admin/devices")}
+                    className="group relative bg-gradient-to-br from-amber-50 to-white p-8 rounded-[2.5rem] border border-amber-100 hover:shadow-2xl hover:shadow-amber-500/10 transition-all duration-500 cursor-pointer active:scale-[0.98] h-[220px] flex flex-col justify-between overflow-hidden"
+                >
+                    <div className="flex justify-between items-start relative z-10">
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600">Medical Devices</span>
+                        <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-500 border border-amber-50">
+                            <Server className="w-5 h-5 text-amber-600" />
+                        </div>
+                    </div>
+                    <div className="relative z-10">
+                        <p className="text-5xl font-black text-amber-950 tracking-tighter leading-none mb-3">{stats.total_devices}</p>
+                        <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest">Devices in Use</p>
+                    </div>
+                </div>
+
+                {/* 🛡️ Security Card */}
+                <div 
+                    onClick={() => router.push("/dashboard/admin/logs")}
+                    className="group relative bg-gradient-to-br from-rose-50 to-white p-8 rounded-[2.5rem] border border-rose-100 hover:shadow-2xl hover:shadow-rose-500/10 transition-all duration-500 cursor-pointer active:scale-[0.98] h-[220px] flex flex-col justify-between overflow-hidden"
+                >
+                    <div className="flex justify-between items-start relative z-10">
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-rose-600">Security Alerts</span>
+                        <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-500 border border-rose-50">
+                            <Shield className="w-5 h-5 text-rose-600" />
+                        </div>
+                    </div>
+                    <div className="relative z-10">
+                        <p className="text-5xl font-black text-rose-950 tracking-tighter leading-none mb-3">{stats.security_alerts}</p>
+                        <p className="text-[10px] font-black text-rose-400 uppercase tracking-widest">Recent Alerts</p>
+                    </div>
+                </div>
+            </div>
+
+            {/* 📋 AUDIT FEED & SYSTEM HEALTH */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <Card className="lg:col-span-2 bg-white border-none rounded-[3rem] shadow-sm overflow-hidden border border-zinc-100">
+                    <CardHeader className="p-10 pb-6 flex flex-row items-center justify-between border-b border-zinc-50">
+                        <div className="text-left">
+                            <CardTitle className="text-2xl font-black tracking-tight text-zinc-900 uppercase">Recent Activity</CardTitle>
+                            <CardDescription className="text-zinc-400 text-[10px] font-black uppercase tracking-widest mt-1">A log of recent system and security events</CardDescription>
+                        </div>
                         <Button 
                             variant="outline" 
-                            className="rounded-2xl bg-zinc-900/40 border-zinc-800 hover:bg-zinc-800 text-[10px] font-black uppercase tracking-widest px-6 h-12 transition-all"
-                            onClick={() => router.push("/dashboard/admin/logs")}
-                        >
-                            <Terminal className="w-4 h-4 mr-2 text-rose-500" />
-                            Diagnostic Feed
-                        </Button>
-                    </div>
-                </div>
-
-            {/* 🔥 SECTION 1: CLINICAL STABILITY */}
-            <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                    <span className="text-[10px] font-black tracking-[0.3em] uppercase text-zinc-600 italic">Clinical Stability Pulse</span>
-                    <div className="h-px flex-1 bg-zinc-900 border-b border-zinc-800/50" />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <Card className="bg-rose-500/5 border-rose-500/10 backdrop-blur-3xl hover:border-rose-500/30 transition-all cursor-pointer group" onClick={() => router.push("/dashboard/admin/alerts")}>
-                        <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-[10px] font-black text-rose-500 uppercase tracking-widest leading-none">Active Crises</CardTitle>
-                            <ShieldAlert className="w-4 h-4 text-rose-500 animate-pulse" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-4xl font-black text-zinc-100">
-                                {loadingStats ? "..." : (stats.active_crises ?? 0)}
-                            </div>
-                            <p className="text-[10px] font-bold text-zinc-500 mt-1 uppercase tracking-tight">Active Critical Alerts</p>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="bg-emerald-500/5 border-emerald-500/10 backdrop-blur-3xl hover:border-emerald-500/30 transition-all cursor-pointer group" onClick={() => router.push("/dashboard/admin/patients")}>
-                        <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-[10px] font-black text-emerald-500 uppercase tracking-widest leading-none">Bed Occupancy</CardTitle>
-                            <Activity className="w-4 h-4 text-emerald-500" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-4xl font-black text-zinc-100">
-                                {loadingStats ? "..." : (stats.occupied_beds ?? 0)}<span className="text-zinc-700 text-lg">/{(stats.total_beds ?? 0)}</span>
-                            </div>
-                            <p className="text-[10px] font-bold text-zinc-500 mt-1 uppercase tracking-tight">Current Patient Density</p>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="bg-zinc-900/40 border-zinc-800/50 backdrop-blur-3xl hover:border-zinc-700 transition-all cursor-pointer group" onClick={() => router.push("/dashboard/admin/patients")}>
-                        <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-[10px] font-black text-zinc-500 uppercase tracking-widest leading-none">Historical Cases</CardTitle>
-                            <Users className="w-4 h-4 text-zinc-500" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-4xl font-black text-zinc-100">
-                                {loadingStats ? "..." : (stats.total_patients ?? 0)}
-                            </div>
-                            <p className="text-[10px] font-bold text-zinc-500 mt-1 uppercase tracking-tight">Total Admitted (Lifetime)</p>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="bg-blue-500/5 border-blue-500/10 backdrop-blur-3xl hover:border-blue-500/30 transition-all cursor-pointer group">
-                        <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-[10px] font-black text-blue-500 uppercase tracking-widest leading-none">Security Mask</CardTitle>
-                            <Shield className="w-4 h-4 text-blue-500" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-4xl font-black text-zinc-100">
-                                {loadingStats ? "..." : (stats.security_alerts ?? 0)}
-                            </div>
-                            <p className="text-[10px] font-bold text-zinc-500 mt-1 uppercase tracking-tight">Safeguard Lockouts</p>
-                        </CardContent>
-                    </Card>
-                </div>
-            </div>
-
-            {/* 🔥 SECTION 2: INFRASTRUCTURE INTEGRITY */}
-            <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                    <span className="text-[10px] font-black tracking-[0.3em] uppercase text-zinc-600 italic">Hardware & Staff Integrity</span>
-                    <div className="h-px flex-1 bg-zinc-900 border-b border-zinc-800/50" />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <Card className="bg-zinc-900/40 border-zinc-800/50 backdrop-blur-xl hover:border-emerald-500/20 transition-all cursor-pointer group" onClick={() => router.push("/dashboard/admin/users")}>
-                        <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-[10px] font-black text-zinc-400 uppercase tracking-widest leading-none">Clinical Staff</CardTitle>
-                            <UserCircle className="w-4 h-4 text-zinc-500 group-hover:text-emerald-500 transition-colors" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-black text-zinc-100">
-                                {loadingStats ? "..." : (stats.active_staff ?? 0)}
-                            </div>
-                            <p className="text-[10px] font-bold text-zinc-600 mt-1 uppercase tracking-tight italic">Authenticated & Online</p>
-                        </CardContent>
-                    </Card>
-                    
-                    <Card className="bg-zinc-900/40 border-zinc-800/50 backdrop-blur-xl hover:border-rose-500/20 transition-all cursor-pointer group" onClick={() => router.push("/dashboard/admin/devices")}>
-                        <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-[10px] font-black text-zinc-400 uppercase tracking-widest leading-none">Live Simulators</CardTitle>
-                            <Server className="w-4 h-4 text-rose-400/50 group-hover:text-rose-500 transition-colors" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-black text-zinc-100">
-                                {loadingStats ? "..." : (stats.active_simulators ?? 0)}
-                            </div>
-                            <p className="text-[10px] font-bold text-zinc-600 mt-1 uppercase tracking-tight italic">Synthetic Engine Units</p>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="bg-zinc-900/40 border-zinc-800/50 backdrop-blur-xl hover:border-blue-500/20 transition-all cursor-pointer group">
-                        <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-[10px] font-black text-zinc-400 uppercase tracking-widest leading-none">Fleet Integrity</CardTitle>
-                            <RefreshCw className="w-4 h-4 text-blue-400/50 group-hover:text-blue-500 transition-colors" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-black text-zinc-100">
-                                {loadingStats ? "..." : (stats.total_devices ?? 0)}
-                            </div>
-                            <p className="text-[10px] font-bold text-zinc-600 mt-1 uppercase tracking-tight italic">Total Registered Hardware</p>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="bg-emerald-500/[0.02] border-emerald-500/10 backdrop-blur-xl border-dashed">
-                        <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-[10px] font-black text-emerald-500/70 uppercase tracking-widest leading-none">System Health</CardTitle>
-                            <Activity className="text-emerald-500/30 w-4 h-4 animate-pulse" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-black text-zinc-100 tracking-tighter italic">
-                                {loadingStats ? "..." : (stats.system_health ?? "100.0")}%
-                            </div>
-                            <p className="text-[10px] font-bold text-zinc-600 mt-1 uppercase tracking-tight italic">Operational Normality</p>
-                        </CardContent>
-                    </Card>
-                </div>
-            </div>
-
-            <div className="mt-10">
-                <Card className="bg-zinc-950 border-zinc-900 overflow-hidden">
-                    <CardHeader className="flex flex-row items-center justify-between border-b border-zinc-900 pb-6 bg-zinc-900/10">
-                        <div>
-                            <CardTitle className="text-lg">System Integrity Logs</CardTitle>
-                            <CardDescription>Real-time audit trail of administrative actions.</CardDescription>
-                        </div>
-                        <Button 
-                            variant="ghost" 
                             size="sm" 
-                            className="text-zinc-500 hover:text-white"
-                            onClick={() => router.push("/dashboard/admin/logs")}
+                            className="rounded-2xl bg-zinc-50 border-none shadow-sm hover:bg-indigo-50 hover:text-indigo-600 text-[10px] font-black uppercase tracking-widest px-6 h-12 transition-all active:scale-95 text-zinc-500"
+                            onClick={fetchRecentLogs}
                         >
-                            <Clock className="w-4 h-4 mr-2" />
-                            Live Feed
+                            <RefreshCw className={cn("w-3.5 h-3.5 mr-2", loadingLogs && "animate-spin")} />
+                            Refresh
                         </Button>
                     </CardHeader>
                     <CardContent className="p-0">
-                        <div className="min-h-[250px] bg-black/20 font-mono text-xs">
+                        <div className="min-h-[450px]">
                             {loadingLogs ? (
-                                <div className="py-20 flex flex-col items-center justify-center text-zinc-700">
-                                    <RefreshCw className="w-8 h-8 mb-4 animate-spin opacity-20" />
-                                    <p className="text-sm font-bold uppercase tracking-widest">Synchronizing...</p>
+                                <div className="p-10 space-y-4">
+                                    {[...Array(5)].map((_, i) => (
+                                      <Skeleton key={i} className="h-16 w-full border-none bg-zinc-50 rounded-2xl" />
+                                    ))}
                                 </div>
                             ) : logs.length > 0 ? (
-                                <div className="divide-y divide-zinc-900/50">
-                                    {logs.map((line, i) => (
-                                        <div key={i} className="flex gap-4 p-4 hover:bg-white/[0.02] transition-colors group">
-                                            <span className="text-zinc-800 select-none w-4 text-right">{i + 1}</span>
-                                            <span className="text-zinc-400 group-hover:text-zinc-200 leading-relaxed">{line}</span>
-                                        </div>
-                                    ))}
-                                    <div 
-                                        className="p-4 text-center text-zinc-600 hover:text-zinc-400 cursor-pointer transition-colors bg-zinc-900/5 mt-2"
+                                <div className="divide-y divide-zinc-50">
+                                    {logs.map((line, i) => {
+                                        const isCritical = line.toLowerCase().includes('error') || line.toLowerCase().includes('alert');
+                                        const isSecurity = line.toLowerCase().includes('auth') || line.toLowerCase().includes('token') || line.toLowerCase().includes('otp');
+                                        
+                                        return (
+                                            <div key={i} className="px-10 py-5 flex items-start gap-6 hover:bg-zinc-50/40 transition-all group border-l-4 border-l-transparent hover:border-l-[#5C61F2]">
+                                                <div className="flex flex-col items-center pt-1.5 text-left">
+                                                    <div className={`w-2 h-2 rounded-full transition-all duration-500 ${
+                                                        isCritical ? "bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.4)]" : 
+                                                        isSecurity ? "bg-amber-500" : "bg-[#5C61F2]/20 group-hover:bg-[#5C61F2]"
+                                                    }`} />
+                                                    <div className="w-px h-full bg-zinc-100 mt-2 group-last:hidden" />
+                                                </div>
+                                                <div className="flex-1 space-y-1 text-left">
+                                                    <p className={`text-sm font-bold transition-colors ${
+                                                        isCritical ? "text-rose-900" : "text-zinc-600 group-hover:text-zinc-900"
+                                                    }`}>
+                                                        {line}
+                                                    </p>
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                                                            {isSecurity ? "Security" : isCritical ? "Alert" : "Activity"}
+                                                        </span>
+                                                        {isSecurity && <Shield className="w-3 h-3 text-amber-500" />}
+                                                        {isCritical && <ShieldAlert className="w-3 h-3 text-rose-500" />}
+                                                    </div>
+                                                </div>
+                                                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <Terminal className="w-4 h-4 text-zinc-300" />
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                    <button 
+                                        className="w-full py-6 text-[11px] font-black text-zinc-400 hover:text-[#5C61F2] transition-colors uppercase tracking-[0.3em] bg-zinc-50/20 group border-t border-zinc-50"
                                         onClick={() => router.push("/dashboard/admin/logs")}
                                     >
-                                        View full log history →
-                                    </div>
+                                        <span className="group-hover:mr-2 transition-all inline-block">View Full History</span>
+                                        <ArrowUpRight className="w-3 h-3 inline-block opacity-0 group-hover:opacity-100 transition-all" />
+                                    </button>
                                 </div>
                             ) : (
-                                <div className="py-24 flex flex-col items-center justify-center text-zinc-700 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-zinc-900/20 to-transparent">
-                                    <LayoutDashboard className="w-12 h-12 mb-4 opacity-10" />
-                                    <p className="text-sm font-medium italic">No recent system events detected.</p>
+                                <div className="py-32 flex flex-col items-center justify-center text-zinc-300">
+                                    <Terminal className="w-12 h-12 mb-4 opacity-10" />
+                                    <p className="text-[11px] font-black uppercase tracking-[0.3em] opacity-40 text-zinc-400">No activity found</p>
                                 </div>
                             )}
                         </div>
                     </CardContent>
                 </Card>
+
+                <div className="space-y-8">
+                    <Card className="bg-white border-none rounded-[3rem] shadow-sm p-10">
+                        <div className="text-left mb-8">
+                            <CardTitle className="text-xl font-black tracking-tight text-zinc-900 uppercase">Staff Overview</CardTitle>
+                            <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mt-1">Current personnel and simulation status</p>
+                        </div>
+                        <div className="space-y-6">
+                            <div className="flex items-center gap-5 p-6 rounded-3xl bg-[#5C61F2]/5 border border-[#5C61F2]/10">
+                                <div className="w-14 h-14 rounded-2xl bg-white shadow-sm flex items-center justify-center border border-[#5C61F2]/5">
+                                    <UserCircle className="w-7 h-7 text-[#5C61F2]" />
+                                </div>
+                                <div className="text-left">
+                                    <p className="text-2xl font-black text-zinc-900 tracking-tight leading-none mb-1">{stats.active_staff}</p>
+                                    <p className="text-[10px] font-black text-[#5C61F2] uppercase tracking-widest">Active Clinical Staff</p>
+                                </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-5 p-6 rounded-3xl bg-[#5C61F2]/5 border border-[#5C61F2]/10">
+                                <div className="w-14 h-14 rounded-2xl bg-white shadow-sm flex items-center justify-center border border-[#5C61F2]/5">
+                                    <Server className="w-7 h-7 text-[#5C61F2]" />
+                                </div>
+                                <div className="text-left">
+                                    <p className="text-2xl font-black text-zinc-900 tracking-tight leading-none mb-1">{stats.active_simulators}</p>
+                                    <p className="text-[10px] font-black text-[#5C61F2] uppercase tracking-widest">Simulated Patients</p>
+                                </div>
+                            </div>
+
+                            <div className="pt-8 border-t border-zinc-50">
+                                <div className="flex items-center justify-between mb-3 text-left">
+                                    <span className="text-[11px] font-black text-zinc-900 uppercase tracking-widest">System Health</span>
+                                    <span className="text-[11px] font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">{stats.system_health}%</span>
+                                </div>
+                                <div className="w-full h-3 bg-zinc-100 rounded-full overflow-hidden p-0.5">
+                                    <div className="h-full bg-emerald-500 rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(16,185,129,0.4)]" style={{ width: `${stats.system_health}%` }} />
+                                </div>
+                            </div>
+                        </div>
+                    </Card>
+
+                    <Card className="bg-gradient-to-br from-[#5C61F2] to-[#4A4ED4] border-none rounded-[3rem] shadow-2xl shadow-[#5C61F2]/30 p-10 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl group-hover:scale-110 transition-transform duration-700" />
+                        <div className="relative z-10 text-left">
+                            <Settings className="w-10 h-10 text-white/40 mb-6 group-hover:rotate-90 transition-transform duration-1000" />
+                            <h3 className="text-2xl font-black text-white tracking-tight uppercase mb-2">System Settings</h3>
+                            <p className="text-white/60 text-[10px] font-black uppercase tracking-widest leading-relaxed">Manage system configurations and users.</p>
+                            <Button 
+                                onClick={() => router.push("/dashboard/admin/users")}
+                                className="w-full mt-8 h-14 bg-white text-[#5C61F2] hover:bg-zinc-100 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] shadow-xl transition-all active:scale-95 border-none"
+                            >
+                                Open Settings
+                            </Button>
+                        </div>
+                    </Card>
+                </div>
             </div>
 
             <ChangePasswordModal 
                 isOpen={isChangePasswordOpen} 
                 onClose={() => setIsChangePasswordOpen(false)} 
             />
-            </div>
-        </DashboardShell>
+        </div>
     );
 }

@@ -22,7 +22,8 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import api from "@/lib/axios";
 import { toast } from "sonner";
-import { User, Loader2, Hospital, Stethoscope, BriefcaseMedical } from "lucide-react";
+import { User, Loader2, Hospital, Stethoscope, BriefcaseMedical, Users } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Bed {
   id: number;
@@ -43,6 +44,7 @@ interface Patient {
   diagnosis?: string;
   bed: number;
   doctor?: number;
+  primary_nurse?: number;
   mode: string;
   is_active: boolean;
 }
@@ -63,6 +65,7 @@ export default function PatientDialog({
   const [loading, setLoading] = useState(false);
   const [beds, setBeds] = useState<Bed[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [nurses, setNurses] = useState<Doctor[]>([]);
   const [formData, setFormData] = useState({
     name: "",
     age: 0,
@@ -70,6 +73,7 @@ export default function PatientDialog({
     diagnosis: "",
     bed: "",
     doctor: "",
+    primary_nurse: "",
     mode: "SIMULATION",
     is_active: true,
   });
@@ -85,6 +89,7 @@ export default function PatientDialog({
           diagnosis: patient.diagnosis || "",
           bed: patient.bed.toString(),
           doctor: patient.doctor?.toString() || "",
+          primary_nurse: patient.primary_nurse?.toString() || "",
           mode: patient.mode,
           is_active: patient.is_active,
         });
@@ -96,6 +101,7 @@ export default function PatientDialog({
           diagnosis: "",
           bed: "",
           doctor: "",
+          primary_nurse: "",
           mode: "SIMULATION",
           is_active: true,
         });
@@ -105,9 +111,10 @@ export default function PatientDialog({
 
   const fetchClinicalDependencies = async () => {
     try {
-      const [bedsRes, doctorsRes] = await Promise.all([
+      const [bedsRes, doctorsRes, nursesRes] = await Promise.all([
         api.get("beds/admin/beds/"),
-        api.get("accounts/users/?role=DOCTOR&active=true")
+        api.get("accounts/users/?role=DOCTOR&active=true"),
+        api.get("accounts/users/?role=NURSE&active=true")
       ]);
 
       if (bedsRes.data.success) {
@@ -121,6 +128,10 @@ export default function PatientDialog({
       if (doctorsRes.data.success) {
         const rawDoctors = doctorsRes.data.data || doctorsRes.data.results || [];
         setDoctors(rawDoctors);
+      }
+      if (nursesRes.data.success) {
+        const rawNurses = nursesRes.data.data || nursesRes.data.results || [];
+        setNurses(rawNurses);
       }
     } catch (error) {
       toast.error("Failed to sync clinical infrastructure");
@@ -136,6 +147,7 @@ export default function PatientDialog({
         ...formData,
         bed: parseInt(formData.bed),
         doctor: formData.doctor ? parseInt(formData.doctor) : null,
+        primary_nurse: formData.primary_nurse ? parseInt(formData.primary_nurse) : null,
         age: parseInt(formData.age.toString()),
       };
 
@@ -150,7 +162,7 @@ export default function PatientDialog({
       onOpenChange(false);
     } catch (error: any) {
       const rawError = error.response?.data?.message || error.response?.data?.error;
-      let message = "Internal medical fault";
+      let message = "System error: Failed to process request";
 
       if (typeof rawError === "string") {
         message = rawError;
@@ -169,174 +181,185 @@ export default function PatientDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] bg-zinc-950 border-zinc-800 text-zinc-100 shadow-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-blue-500/10 rounded-lg">
-              <Hospital className="w-5 h-5 text-blue-500" />
+      <DialogContent className="sm:max-w-[650px] bg-white border-none text-zinc-900 shadow-2xl rounded-[2.5rem] p-0 overflow-hidden">
+        <DialogHeader className="p-8 pb-4 bg-emerald-50/50 border-b border-emerald-100">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+              <User className="w-6 h-6 text-emerald-600" />
             </div>
-            <DialogTitle className="text-xl font-black uppercase tracking-tight">
-              {patient ? "Modify Admission" : "New Patient Admission"}
-            </DialogTitle>
+            <div className="flex flex-col text-left">
+              <DialogTitle className="text-2xl font-black tracking-tight">
+                {patient ? "Identity Calibration" : "New Patient Admission"}
+              </DialogTitle>
+              <p className="text-emerald-600 text-[11px] font-black uppercase tracking-widest mt-0.5">
+                Clinical Health Record & Assignment
+              </p>
+            </div>
           </div>
-          <p className="text-zinc-500 text-xs font-medium italic">
-            Configure clinical identity, physiological monitoring mode, and ward assignment.
-          </p>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6 py-4">
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2 col-span-2 md:col-span-1">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">
-                        Full Name
-                    </Label>
-                    <Input
-                        placeholder="Legal Name"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        className="bg-black/40 border-zinc-800 focus:ring-blue-500/20 text-zinc-200 h-11"
-                        required
-                    />
-                </div>
-                <div className="space-y-2 col-span-2 md:col-span-1">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">
-                        Age (Years)
-                    </Label>
-                    <Input
-                        type="number"
-                        min="0"
-                        value={formData.age}
-                        onChange={(e) => setFormData({ ...formData, age: parseInt(e.target.value) || 0 })}
-                        className="bg-black/40 border-zinc-800 focus:ring-blue-500/20 text-zinc-200 h-11 font-mono font-bold"
-                        required
-                    />
-                </div>
+        <form onSubmit={handleSubmit} className="p-8 pt-6 space-y-8">
+          <div className="space-y-6">
+            <div className="grid grid-cols-4 gap-6">
+              <div className="col-span-3 space-y-2 text-left">
+                <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-400 ml-1">Legal Patient Name</Label>
+                <Input
+                  placeholder="Full Legal Name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="bg-zinc-50 border-none h-14 rounded-2xl focus-visible:ring-2 focus-visible:ring-emerald-500/10 font-bold text-zinc-900 placeholder:text-zinc-300 transition-all"
+                  required
+                />
+              </div>
+              <div className="space-y-2 text-left">
+                <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-400 ml-1">Age (Years)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="150"
+                  value={formData.age}
+                  onChange={(e) => setFormData({ ...formData, age: parseInt(e.target.value) || 0 })}
+                  className="bg-zinc-50 border-none h-14 rounded-2xl focus-visible:ring-2 focus-visible:ring-emerald-500/10 font-black text-zinc-900 text-lg transition-all"
+                  required
+                />
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">
-                        Gender
-                    </Label>
-                    <Select
-                        value={formData.gender}
-                        onValueChange={(val) => setFormData({ ...formData, gender: val })}
-                    >
-                        <SelectTrigger className="bg-black/40 border-zinc-800 text-zinc-200 h-11">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-200">
-                            <SelectItem value="MALE">Male</SelectItem>
-                            <SelectItem value="FEMALE">Female</SelectItem>
-                            <SelectItem value="OTHER">Other</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-                <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">
-                        Monitoring Mode
-                    </Label>
-                    <Select
-                        value={formData.mode}
-                        onValueChange={(val) => setFormData({ ...formData, mode: val })}
-                    >
-                        <SelectTrigger className="bg-black/40 border-zinc-800 text-zinc-200 h-11">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-200">
-                            <SelectItem value="SIMULATION">Simulation</SelectItem>
-                            <SelectItem value="REAL">Real Hardware</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-2 text-left">
+                <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-400 ml-1">Biological Sex</Label>
+                <Select
+                  value={formData.gender}
+                  onValueChange={(val) => setFormData({ ...formData, gender: val })}
+                >
+                  <SelectTrigger className="bg-zinc-50 border-none h-14 rounded-2xl focus:ring-2 focus:ring-emerald-500/10 font-bold text-zinc-900 px-6 transition-all">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border-none shadow-2xl rounded-2xl p-2">
+                    <SelectItem value="MALE" className="rounded-xl font-bold">Male Identification</SelectItem>
+                    <SelectItem value="FEMALE" className="rounded-xl font-bold">Female Identification</SelectItem>
+                    <SelectItem value="OTHER" className="rounded-xl font-bold">Non-Binary / Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2 text-left">
+                <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-400 ml-1">Assigned Care Unit (Bed)</Label>
+                <Select
+                  value={formData.bed}
+                  onValueChange={(val) => setFormData({ ...formData, bed: val })}
+                  required
+                >
+                  <SelectTrigger className="bg-zinc-50 border-none h-14 rounded-2xl focus:ring-2 focus:ring-emerald-500/10 font-bold text-zinc-900 px-6 transition-all">
+                    <SelectValue placeholder="Locate available bed" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border-none shadow-2xl rounded-2xl p-2">
+                    {beds.length === 0 ? (
+                      <div className="p-4 text-center">
+                        <p className="text-[10px] font-black text-rose-500 uppercase">No Available Beds</p>
+                      </div>
+                    ) : (
+                      beds.map((bed) => (
+                        <SelectItem key={bed.id} value={bed.id.toString()} className="rounded-xl font-bold">
+                          Bed {bed.bed_number}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">
-                Clinical Diagnosis
-              </Label>
+            <div className="space-y-2 text-left">
+              <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-400 ml-1">Clinical Admission Diagnosis</Label>
               <Textarea
-                placeholder="Initial clinical observations..."
+                placeholder="Primary diagnosis and clinical notes..."
                 value={formData.diagnosis}
                 onChange={(e) => setFormData({ ...formData, diagnosis: e.target.value })}
-                className="bg-black/40 border-zinc-800 focus:ring-blue-500/20 text-zinc-200 min-h-[80px]"
+                className="bg-zinc-50 border-none rounded-[2rem] focus-visible:ring-2 focus-visible:ring-emerald-500/10 font-bold text-zinc-900 min-h-[100px] p-6 transition-all"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1 flex items-center gap-1.5">
-                        <BriefcaseMedical className="w-2.5 h-2.5" /> Bed Assignment
-                    </Label>
-                    <Select
-                        value={formData.bed}
-                        onValueChange={(val) => setFormData({ ...formData, bed: val })}
-                        required
-                    >
-                        <SelectTrigger className="bg-black/40 border-zinc-800 text-zinc-200 h-11 font-mono">
-                            <SelectValue placeholder="Select Bed" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-200">
-                            {beds.map((bed) => (
-                                <SelectItem key={bed.id} value={bed.id.toString()}>
-                                    Bed {bed.bed_number}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+            <div className="grid grid-cols-2 gap-6 p-6 bg-zinc-50 rounded-[2.5rem] border border-zinc-100">
+              <div className="space-y-2 text-left">
+                <div className="flex items-center gap-2 mb-1 ml-1">
+                  <Stethoscope className="w-3 h-3 text-emerald-600" />
+                  <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-400">Attending Physician</Label>
                 </div>
-                <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1 flex items-center gap-1.5">
-                        <Stethoscope className="w-2.5 h-2.5" /> Lead Physician
-                    </Label>
-                    <Select
-                        value={formData.doctor}
-                        onValueChange={(val) => setFormData({ ...formData, doctor: val })}
-                    >
-                        <SelectTrigger className="bg-black/40 border-zinc-800 text-zinc-200 h-11">
-                            <SelectValue placeholder="Assign Doctor" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-200">
-                            {doctors.map((doctor) => (
-                                <SelectItem key={doctor.id} value={doctor.id.toString()}>
-                                    Dr. {doctor.username}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                <Select
+                  value={formData.doctor}
+                  onValueChange={(val) => setFormData({ ...formData, doctor: val })}
+                >
+                  <SelectTrigger className="bg-white border-none h-12 rounded-xl focus:ring-2 focus:ring-emerald-500/10 font-bold text-zinc-900 px-4 shadow-sm">
+                    <SelectValue placeholder="Assign Doctor" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border-none shadow-2xl rounded-2xl p-2">
+                    {doctors.map((doc) => (
+                      <SelectItem key={doc.id} value={doc.id.toString()} className="rounded-xl font-bold">
+                        Dr. {doc.username}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2 text-left">
+                <div className="flex items-center gap-2 mb-1 ml-1">
+                  <Users className="w-3 h-3 text-emerald-600" />
+                  <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-400">Primary Nursing Staff</Label>
                 </div>
+                <Select
+                  value={formData.primary_nurse}
+                  onValueChange={(val) => setFormData({ ...formData, primary_nurse: val })}
+                >
+                  <SelectTrigger className="bg-white border-none h-12 rounded-xl focus:ring-2 focus:ring-emerald-500/10 font-bold text-zinc-900 px-4 shadow-sm">
+                    <SelectValue placeholder="Assign Nurse" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border-none shadow-2xl rounded-2xl p-2">
+                    {nurses.map((nurse) => (
+                      <SelectItem key={nurse.id} value={nurse.id.toString()} className="rounded-xl font-bold">
+                         {nurse.username}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
-            <div className="flex items-center justify-between p-4 bg-zinc-900/40 rounded-xl border border-zinc-800/50 backdrop-blur-md">
-              <div className="space-y-0.5">
-                <Label className="text-sm font-bold text-zinc-200">Active Admission</Label>
-                <p className="text-[10px] text-zinc-500 uppercase tracking-tighter">Deactivating marks the patient as discharged</p>
+            <div className="flex items-center justify-between p-6 bg-zinc-50/50 rounded-[2.5rem] border border-dashed border-zinc-200">
+              <div className="space-y-1 text-left">
+                <p className="text-[10px] font-black text-zinc-900 uppercase tracking-widest">Active Clinical State</p>
+                <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest opacity-60">Enable real-time physiological telemetry.</p>
               </div>
               <Switch
                 checked={formData.is_active}
                 onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
-                className="data-[state=checked]:bg-blue-500"
+                className="data-[state=checked]:bg-emerald-600 scale-110"
               />
             </div>
           </div>
 
-          <DialogFooter className="pt-4 border-t border-zinc-800/50">
+          <DialogFooter className="gap-3 pt-6 border-t border-zinc-100">
             <Button
               type="button"
-              variant="outline"
+              variant="ghost"
               onClick={() => onOpenChange(false)}
-              className="bg-transparent border-zinc-800 hover:bg-zinc-900 text-zinc-400 font-bold"
+              className="h-14 px-8 rounded-2xl font-black text-[11px] uppercase tracking-widest text-zinc-400 hover:text-zinc-900 transition-all"
             >
-              Cancel
+              Discard
             </Button>
             <Button
               type="submit"
               disabled={loading}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 shadow-lg shadow-blue-600/20"
+              className="h-14 px-10 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xl shadow-emerald-600/20 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all active:scale-95 disabled:opacity-50"
             >
-              {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {patient ? "Update Record" : "Confirm Admission"}
+              {loading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : patient ? (
+                "Authorize Updates"
+              ) : (
+                "Deploy Admission"
+              )}
             </Button>
           </DialogFooter>
         </form>
