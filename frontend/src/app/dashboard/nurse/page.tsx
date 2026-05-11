@@ -108,16 +108,137 @@ export default function NurseClinicalDashboard() {
         if (user?.role === "NURSE") fetchContext();
     }, [user, fetchContext]);
 
+    // 🚀 CLINICAL HANDSHAKE: Loading nurse-scoped telemetry (Snapshot -> History -> Socket)
+    useEffect(() => {
+        if (!user || user.role !== "NURSE") return;
+        
+        async function synchronizeNexus() {
+            try {
+                // STEP 1: Fetch Instant Snapshot
+                const snapshotRes = await api.get("vitals/admin/snapshot/");
+                if (snapshotRes.data?.success) {
+                    const baseSnapshot = (snapshotRes.data?.results || []).map((d: any) => ({
+                        device: {
+                            id: d.device_id,
+                            serial: d.device_serial,
+                            label: d.device_label || d.device_serial,
+                            mode: d.device_mode,
+                            state: d.device_state,
+                            last_seen: d.timestamp,
+                        },
+                        patient: {
+                            id: d.patient_id,
+                            name: d.patient_name || "ANONYMOUS",
+                            location: d.ward_id ? `Ward ${d.ward_id} / Bed R${d.bed_id}` : "CALIBRATION",
+                            ward_id: d.ward_id,
+                        },
+                        vitals: {
+                            heart_rate: d.heart_rate,
+                            spo2: d.spo2,
+                            temperature: d.temperature,
+                            bp: d.bp || "---/---",
+                            timestamp: d.timestamp,
+                        },
+                        waveform: {
+                            ecg: generateSyntheticWaveform("ECG", d.heart_rate || 75, 400),
+                            spo2: generateSyntheticWaveform("PPG", d.spo2 || 98, 400),
+                        },
+                        ward_id: d.ward_id,
+                        room_id: d.room_id,
+                        bed_id: d.bed_id,
+                    }));
+                    setInitialVitals(baseSnapshot);
+                }
+
+                // STEP 2: Fetch Recent History (Last 5 Mins)
+                try {
+                    const historyRes = await api.get("vitals/admin/history/?minutes=5");
+                    if (historyRes.data?.success) {
+                        const historyMap: Record<number, any[]> = {};
+                        (historyRes.data?.results || []).forEach((h: any) => {
+                            if (!historyMap[h.device_id]) historyMap[h.device_id] = [];
+                            historyMap[h.device_id].push(h);
+                        });
+
+                        setInitialVitals(prev => (prev || []).map(v => {
+                            const deviceHistory = historyMap[v.device.id];
+                            if (!deviceHistory || deviceHistory.length === 0) return v;
+                            const latest = deviceHistory[deviceHistory.length - 1];
+                            return {
+                                ...v,
+                                vitals: {
+                                    ...v.vitals,
+                                    heart_rate: latest.heart_rate,
+                                    spo2: latest.spo2,
+                                    temperature: latest.temperature,
+                                    bp: latest.bp,
+                                    timestamp: latest.timestamp,
+                                },
+                                waveform: {
+                                    ecg: generateSyntheticWaveform("ECG", latest.heart_rate || 75, 300),
+                                    spo2: generateSyntheticWaveform("PPG", latest.spo2 || 98, 300),
+                                }
+                            };
+                        }));
+                    }
+                } catch (he) {
+                    console.warn("Nexus Dashboard: History backfill failed", he);
+                }
+            } catch (e) {
+                console.error("Nurse Dashboard: Handshake failure", e);
+            }
+        }
+        synchronizeNexus();
+    }, [user]);
+
     // 📡 TELEMETRY HUB (Global Persistence)
-    const { vitalsMap, connected, latency } = useVitalsStore();
-    const vitals = Object.values(vitalsMap);
+    const { vitals, connected, latency } = useVitalsSocket({ initialData: initialVitals, autoConnect: true });
 
 
     if (!_hasHydrated || !user) return null;
 
     const allPatients = wards.flatMap(w => w.rooms.flatMap(r => r.beds.filter(b => b.patient)));
     const selectedPatient = allPatients.find(p => String(p.patient?.id) === String(selectedPatientId));
-    const activePatientVitals = vitals.find(v => String(v.patient?.id) === String(selectedPatientId));
+    let activePatientVitals = vitals.find(v => String(v.patient?.id) === String(selectedPatientId));
+
+    // 🏥 DISCONNECTED DEVICE HANDSHAKE: If patient selected but no live feed, create dummy offline context
+    if (selectedPatient && !activePatientVitals) {
+        activePatientVitals = {
+            device: {
+                id: 0,
+                serial: selectedPatient.device_serial || "UNKNOWN",
+                label: selectedPatient.device_serial || "Station",
+                mode: "REAL",
+                state: "OFFLINE",
+                last_seen: new Date().toISOString(),
+            },
+            patient: {
+                id: selectedPatient.patient?.id || 0,
+                name: selectedPatient.patient?.name || "ANONYMOUS",
+                location: `Bed ${selectedPatient.bed_number}`,
+                ward_id: 0,
+            },
+            vitals: {
+                heart_rate: 0,
+                spo2: 0,
+                temperature: 0,
+                bp: "---/---",
+                timestamp: "",
+            },
+            waveform: {
+                ecg: [],
+                spo2: [],
+            },
+            system: {
+                signal_state: "LOST",
+                signal_quality: "NONE",
+                sensor_connected: false,
+                device_mode: "REAL",
+                rssi: -100,
+                uptime: 0
+            }
+        } as any;
+    }
 
     const shiftStartTime = shiftStatus.shift_details?.start_time
         ? new Date(shiftStatus.shift_details.start_time)
@@ -181,7 +302,7 @@ export default function NurseClinicalDashboard() {
                                     shiftStatus.is_active ? "text-emerald-600" : 
                                     isShiftFinished ? "text-rose-600" : "text-zinc-400"
                                 )}>
-                                    {shiftStatus.is_active ? "Active Duty" : isShiftFinished ? "Shift Concluded" : "Standby"}
+                                    {shiftStatus.is_active ? "On Shift" : isShiftFinished ? "Shift Ended" : "Off Duty"}
                                 </span>
                             </div>
                             <div className="px-3 py-1 bg-zinc-50 rounded-lg border border-zinc-100">
@@ -192,10 +313,10 @@ export default function NurseClinicalDashboard() {
                         </div>
 
                         <div className="space-y-2">
-                            <h2 className="text-4xl font-black tracking-tight text-zinc-900 leading-none">Wards</h2>
+                            <h2 className="text-4xl font-black tracking-tight text-zinc-900 leading-none">Units</h2>
                             <div className="flex items-center gap-2 text-[11px] text-zinc-400 font-bold uppercase tracking-wide">
                                 <Activity className="w-3.5 h-3.5 text-[#5C67F2]" />
-                                <span>Monitoring {allPatients.length} Active Beds</span>
+                                <span>Monitoring {allPatients.length} Patients</span>
                             </div>
                         </div>
                     </div>
@@ -209,7 +330,7 @@ export default function NurseClinicalDashboard() {
                                     </div>
                                     <div className="flex flex-col">
                                         <span className="text-[12px] font-black uppercase tracking-widest text-zinc-900">{ward.name}</span>
-                                        <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-tight">Floor {ward.floor} • Critical Response</span>
+                                        <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-tight">Floor {ward.floor} • Patient Care Unit</span>
                                     </div>
                                 </div>
                                 
@@ -262,7 +383,7 @@ export default function NurseClinicalDashboard() {
                                                                         {bed.patient?.name}
                                                                     </span>
                                                                     <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-tight">
-                                                                        {bed.patient?.diagnosis || "Primary Evaluation"}
+                                                                        {bed.patient?.diagnosis || "Initial Check"}
                                                                     </span>
                                                                 </div>
                                                                 <div className="flex flex-col items-end gap-1">
@@ -297,38 +418,7 @@ export default function NurseClinicalDashboard() {
                         ))}
                     </div>
 
-                    {/* Duty Context Footer */}
-                    {shiftStatus.is_active && (
-                        <div className="p-6 bg-zinc-50/50 border-t border-zinc-100">
-                            <div className="flex items-center justify-between mb-3">
-                                <span className="text-[9px] font-black uppercase text-zinc-400 tracking-widest">Duty Timeline</span>
-                                <span className={cn(
-                                    "text-[10px] font-black uppercase px-3 py-1 rounded-xl bg-white border border-zinc-200",
-                                    minutesRemaining < 30 ? "text-rose-500" : "text-[#5C67F2]"
-                                )}>
-                                    {minutesRemaining > 0 
-                                        ? `${Math.floor(minutesRemaining / 60)}h ${minutesRemaining % 60}m Left`
-                                        : "Shift Over"}
-                                </span>
-                            </div>
-                            <div className="h-1.5 bg-zinc-200 rounded-full overflow-hidden">
-                                <motion.div 
-                                    className="h-full bg-[#5C67F2] shadow-[0_0_12px_#5C67F2/30]"
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${progress}%` }}
-                                    transition={{ duration: 1, ease: "easeOut" }}
-                                />
-                            </div>
-                            <div className="flex justify-between mt-2 text-[8px] font-black text-zinc-400 uppercase tracking-tighter">
-                                <div className="flex flex-col">
-                                    <span>Start {shiftStartTime ? format(shiftStartTime, "hh:mm aa") : "--:--"}</span>
-                                </div>
-                                <div className="flex flex-col items-end">
-                                    <span>End {shiftEndTime ? format(shiftEndTime, "hh:mm aa") : "--:--"}</span>
-                                </div>
-                            </div>
-                        </div>
-                    )}
+                    {/* Sidebar Footer Removed */}
                 </div>
 
                 {/* 🏥 OBSERVATION HUB (70%) */}
@@ -340,9 +430,9 @@ export default function NurseClinicalDashboard() {
                              <div className="w-24 h-24 rounded-[2rem] border border-zinc-800 flex items-center justify-center mb-8 rotate-12">
                                  <Stethoscope className="w-12 h-12 text-zinc-700" />
                              </div>
-                             <h3 className="text-2xl font-black uppercase tracking-[0.3em] mb-4">Board Initialization</h3>
+                             <h3 className="text-2xl font-black uppercase tracking-[0.3em] mb-4">Select a Bed</h3>
                              <p className="text-[10px] text-zinc-500 max-w-xs font-bold uppercase tracking-widest">
-                                 Telemetry handshake active. Select a high-acuity bed to escalate monitoring.
+                                 Choose a patient from the list on the left to start monitoring.
                              </p>
                         </div>
                     ) : (
@@ -360,7 +450,7 @@ export default function NurseClinicalDashboard() {
                                           <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-2xl border border-zinc-200/60 shadow-sm">
                                               <FileText className="w-3.5 h-3.5 text-zinc-400" />
                                               <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-tight">
-                                                  Dx: {selectedPatient?.patient?.diagnosis || "Primary Evaluation"}
+                                                  Diagnosis: {selectedPatient?.patient?.diagnosis || "Initial Check"}
                                               </span>
                                           </div>
                                           <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-2xl border border-zinc-200/60 shadow-sm">
@@ -391,8 +481,8 @@ export default function NurseClinicalDashboard() {
 
                              {/* Telemetry Core */}
                              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-12">
-                                 <div className="lg:col-span-8 bg-black rounded-[3rem] shadow-2xl relative min-h-[500px] overflow-hidden border-8 border-white">
-                                     {activePatientVitals ? (
+                                 <div className="lg:col-span-12 relative min-h-[500px]">
+                                     {activePatientVitals && (
                                          <VitalCard 
                                             data={activePatientVitals} 
                                             onReview={() => {
@@ -404,77 +494,7 @@ export default function NurseClinicalDashboard() {
                                                 });
                                             }}
                                          />
-                                     ) : (
-                                         <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-12">
-                                              <div className="relative mb-6">
-                                                <Activity className="w-16 h-16 text-zinc-900 animate-pulse" />
-                                                <div className="absolute inset-0 flex items-center justify-center">
-                                                    <Loader2 className="w-8 h-8 text-zinc-700 animate-spin" />
-                                                </div>
-                                              </div>
-                                              <span className="text-[10px] text-zinc-600 font-black uppercase tracking-[0.3em]">Hardware Synchronization in progress...</span>
-                                              <p className="text-[9px] text-zinc-800 font-bold uppercase mt-2">Checking signal integrity through telemetry router</p>
-                                         </div>
                                      )}
-                                 </div>
-
-                                 <div className="lg:col-span-4 flex flex-col gap-8">
-                                     <div className={cn(
-                                         "flex-1 rounded-[3rem] border p-10 flex flex-col transition-all duration-700 bg-white shadow-sm border-zinc-100",
-                                         activePatientVitals?.patient?.clinical_condition === "CRITICAL" && "ring-2 ring-rose-500/20",
-                                         activePatientVitals?.patient?.clinical_condition === "GUARDED" && "ring-2 ring-amber-500/20"
-                                     )}>
-                                         <div className="flex items-center gap-4 mb-8">
-                                             <div className={cn(
-                                                 "w-12 h-12 rounded-2xl flex items-center justify-center shadow-2xl",
-                                                 activePatientVitals?.patient?.clinical_condition === "CRITICAL" ? "bg-rose-600 text-white" :
-                                                 activePatientVitals?.patient?.clinical_condition === "GUARDED" ? "bg-amber-600 text-white" :
-                                                 "bg-emerald-600 text-white"
-                                             )}>
-                                                 <Stethoscope className="w-6 h-6" />
-                                             </div>
-                                             <div>
-                                                 <span className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-300 block mb-1">Observation Status</span>
-                                                 <h3 className={cn(
-                                                     "text-3xl font-black uppercase tracking-tighter",
-                                                     activePatientVitals?.patient?.clinical_condition === "CRITICAL" ? "text-rose-500" :
-                                                     activePatientVitals?.patient?.clinical_condition === "GUARDED" ? "text-amber-500" :
-                                                     "text-emerald-500"
-                                                 )}>
-                                                     {activePatientVitals?.patient?.clinical_condition || "STABLE"}
-                                                 </h3>
-                                             </div>
-                                         </div>
-
-                                         <div className="flex-1 space-y-6">
-                                             <div className="space-y-3">
-                                                 <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Clinical Insight</span>
-                                                 <p className="text-base font-medium text-zinc-600 leading-relaxed tracking-tight">
-                                                     "{activePatientVitals?.ai_condition_summary || "Telemetry patterns indicate stable baseline. Continuing observation protocol."}"
-                                                 </p>
-                                             </div>
-
-                                             <div className="pt-6 border-t border-white/5 space-y-4">
-                                                 <div className="flex justify-between items-center">
-                                                     <span className="text-[9px] font-black text-zinc-700 uppercase">Assessment Engine</span>
-                                                     <span className="text-[9px] font-black text-emerald-500/50 uppercase tracking-tighter">Scikit-Learn v1.4</span>
-                                                 </div>
-                                                 <div className="flex justify-between items-center">
-                                                     <span className="text-[9px] font-black text-zinc-700 uppercase">Last Sync</span>
-                                                     <span className="text-[9px] font-black text-zinc-500 uppercase tracking-tighter">
-                                                         {activePatientVitals?.vitals.timestamp ? format(new Date(activePatientVitals.vitals.timestamp), "HH:mm:ss") : "LIVE"}
-                                                     </span>
-                                                 </div>
-                                             </div>
-                                         </div>
-
-                                         <div className="mt-8 p-4 bg-black/40 rounded-2xl border border-white/5 flex items-start gap-3">
-                                             <Shield className="w-4 h-4 text-zinc-600 shrink-0 mt-0.5" />
-                                             <p className="text-[9px] text-zinc-600 font-bold uppercase leading-relaxed">
-                                                 Condition derived from real-time biometric trends. No manual overrides detected in this session.
-                                             </p>
-                                         </div>
-                                     </div>
                                  </div>
                              </div>
 

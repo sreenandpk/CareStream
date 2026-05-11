@@ -103,9 +103,7 @@ export default function DashboardShell({ children }: DashboardShellProps) {
         ] : []),
         ...(isNurse ? [
             { name: "My Dashboard", href: "/dashboard/nurse", icon: Home },
-            { name: "Patient Wards", href: "/dashboard/nurse/wards", icon: Building2 },
             { name: "Live Monitoring", href: "/dashboard/nurse/vitals", icon: Activity },
-            { name: "Medical Devices", href: "/dashboard/nurse/devices", icon: Server },
         ] : []),
     ];
 

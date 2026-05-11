@@ -33,21 +33,24 @@ export default function NurseVitalsPage() {
   const [loading, setLoading] = useState(true);
   const [shiftStatus, setShiftStatus] = useState({ is_active: false, shift_details: null as any });
 
+  const [wards, setWards] = useState<any[]>([]);
+
   // 🚀 CLINICAL HANDSHAKE: Loading multi-patient telemetry grid
   useEffect(() => {
     let active = true;
     const safetyTimer = setTimeout(() => {
         if (active) setLoading(false);
-    }, 5000); // 5s Safety Valve
+    }, 5000); 
 
     async function synchronizeNexus() {
       try {
         if (active) setLoading(true);
 
-        // STEP 0: Fetch Shift Context
-        const contextRes = await api.get("wards/nurse/wards/");
-        if (contextRes.data.success && active) {
-            setShiftStatus({ ...contextRes.data.shift_status, is_active: true });
+        // STEP 0: Fetch Clinical Context (All Wards/Beds)
+        const wardsRes = await api.get("wards/nurse/wards/");
+        if (wardsRes.data.success && active) {
+            setWards(wardsRes.data.data || []);
+            setShiftStatus({ ...wardsRes.data.shift_status, is_active: true });
         }
 
         const params = new URLSearchParams();
@@ -56,8 +59,7 @@ export default function NurseVitalsPage() {
         if (filters.bedId !== "all") params.append("bed", filters.bedId);
 
         // STEP 1: Fetch Nurse-Scoped Instant Snapshot
-        const snapshotUrl = `vitals/admin/snapshot/${params.toString() ? `?${params.toString()}` : ""}`;
-        const snapshotRes = await api.get(snapshotUrl);
+        const snapshotRes = await api.get(`vitals/admin/snapshot/${params.toString() ? `?${params.toString()}` : ""}`);
         
         if (!active) return;
 
@@ -95,14 +97,10 @@ export default function NurseVitalsPage() {
            setInitialData(baseSnapshot);
         }
 
-        // STEP 2: Fetch Recent History Backfill
+        // STEP 2: Fetch History Backfill
         try {
-          const historyUrl = `vitals/admin/history/?minutes=5${params.toString() ? `&${params.toString()}` : ""}`;
-          const historyRes = await api.get(historyUrl);
-          
-          if (!active) return;
-
-          if (historyRes.data?.success) {
+          const historyRes = await api.get(`vitals/admin/history/?minutes=5${params.toString() ? `&${params.toString()}` : ""}`);
+          if (historyRes.data?.success && active) {
             const historyMap: Record<number, any[]> = {};
             (historyRes.data?.results || []).forEach((h: any) => {
                 if (!historyMap[h.device_id]) historyMap[h.device_id] = [];
@@ -113,58 +111,61 @@ export default function NurseVitalsPage() {
               const deviceHistory = historyMap[v.device.id];
               if (!deviceHistory || deviceHistory.length === 0) return v;
               const latest = deviceHistory[deviceHistory.length - 1];
-              
               return {
                 ...v,
-                vitals: {
-                   ...v.vitals,
-                   heart_rate: latest.heart_rate,
-                   spo2: latest.spo2,
-                   temperature: latest.temperature,
-                   bp: latest.bp,
-                   timestamp: latest.timestamp,
-                },
-                waveform: {
-                  ecg: generateSyntheticWaveform("ECG", latest.heart_rate || 75, 300),
-                  spo2: generateSyntheticWaveform("PPG", latest.spo2 || 98, 300),
-                }
+                vitals: { ...v.vitals, heart_rate: latest.heart_rate, spo2: latest.spo2, temperature: latest.temperature, bp: latest.bp, timestamp: latest.timestamp },
+                waveform: { ecg: generateSyntheticWaveform("ECG", latest.heart_rate || 75, 300), spo2: generateSyntheticWaveform("PPG", latest.spo2 || 98, 300) }
               };
             }));
           }
-        } catch (he) {
-          console.warn("Nexus: History backfill failed", he);
-        }
+        } catch (he) { console.warn("Nexus: History failed", he); }
 
-      } catch (e) {
-        console.error("Nurse Monitor: Handshake failure", e);
-      } finally {
-        if (active) {
-            setLoading(false);
-            clearTimeout(safetyTimer);
-        }
-      }
+      } catch (e) { console.error("Nurse Monitor: Handshake failure", e); }
+      finally { if (active) { setLoading(false); clearTimeout(safetyTimer); } }
     }
     synchronizeNexus();
-    return () => {
-        active = false;
-        clearTimeout(safetyTimer);
-    };
+    return () => { active = false; clearTimeout(safetyTimer); };
   }, [filters]);
 
   const { vitalsMap, connected: globalConnected, latency: globalLatency } = useVitalsStore();
-  const vitals = Object.values(vitalsMap);
+  const liveVitals = Object.values(vitalsMap);
 
-  const shiftEndTime = shiftStatus.shift_details?.end_time 
-    ? new Date(shiftStatus.shift_details.end_time) 
-    : null;
+  // 🏥 CLINICAL MERGE ENGINE: Blend live vitals with all assigned patients
+  const allAssignedPatients = wards.flatMap(w => 
+    w.rooms.flatMap((r: any) => 
+        r.beds.filter((b: any) => b.patient).map((b: any) => ({
+            id: b.patient.id,
+            name: b.patient.name,
+            location: `W${w.id} R${r.room_number} B${b.bed_number}`,
+            ward_id: w.id,
+            room_id: r.id,
+            bed_id: b.id,
+            device_serial: b.device_serial
+        }))
+    )
+  );
 
-  const isShiftFinished = false;
-  const isStandby = false;
+  const vitals = allAssignedPatients.map(patient => {
+    const live = liveVitals.find(v => v.patient.id === patient.id);
+    if (live) return live;
+
+    // Create dummy context for offline devices (like ANN)
+    return {
+        device: { id: 0, serial: patient.device_serial || "UNKNOWN", label: patient.device_serial, mode: "REAL", state: "OFFLINE", last_seen: "" },
+        patient: { id: patient.id, name: patient.name, location: patient.location, ward_id: patient.ward_id },
+        vitals: { heart_rate: 0, spo2: 0, temperature: 0, bp: "---/---", timestamp: "" },
+        waveform: { ecg: [], spo2: [] },
+        ward_id: patient.ward_id,
+        room_id: patient.room_id,
+        bed_id: patient.bed_id,
+        system: { signal_state: "LOST" }
+    } as VitalData;
+  });
 
   const filteredVitals = (vitals || []).filter(v => {
     const matchesWard = filters.wardId === "all" || v.ward_id === Number(filters.wardId);
-    const matchesRoom = filters.roomId === "all" || v.room_id === Number(filters.roomId);
-    const matchesBed = filters.bedId === "all" || v.bed_id === Number(filters.bedId);
+    const matchesRoom = filters.room_id === Number(filters.roomId) || filters.roomId === "all";
+    const matchesBed = filters.bed_id === Number(filters.bedId) || filters.bedId === "all";
     return matchesWard && matchesRoom && matchesBed;
   });
 
@@ -181,8 +182,8 @@ export default function NurseVitalsPage() {
         {/* Clinical Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-10">
             <div className="space-y-2">
-                <h1 className="text-5xl font-black tracking-tight text-zinc-900">
-                    Clinical <span className="text-[#5C61F2]">Monitoring</span>
+                <h1 className="text-5xl font-black tracking-tight text-zinc-900 uppercase">
+                    Patient <span className="text-[#5C61F2]">Monitoring</span>
                 </h1>
             </div>
 
@@ -197,7 +198,7 @@ export default function NurseVitalsPage() {
                 <div className="p-8 bg-white rounded-[2.5rem] border border-zinc-200/60 shadow-sm flex flex-col items-center min-w-[200px]">
                     <span className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
                         <ShieldCheck className="w-4 h-4 text-[#5C61F2]" />
-                        Active Units
+                        Monitored Patients
                     </span>
                     <span className="text-5xl font-black text-zinc-900 tracking-tighter">{filteredVitals.length}</span>
                 </div>
@@ -211,7 +212,7 @@ export default function NurseVitalsPage() {
                     <AlertTriangle className="w-5 h-5" />
                 </div>
                 <span className="text-sm font-black uppercase tracking-[0.1em]">
-                    Attention: {criticalCount} high-acuity events detected. Intervention recommended immediately.
+                    Attention: {criticalCount} patients need immediate care. Please check their status.
                 </span>
             </div>
         )}
@@ -223,7 +224,7 @@ export default function NurseVitalsPage() {
         {loading ? (
             <div className="flex flex-col items-center justify-center p-32">
                 <Loader2 className="w-12 h-12 text-emerald-500 animate-spin mb-6" />
-                <span className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-700">Calibrating Nexus...</span>
+                <span className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-700">Loading Patient Data...</span>
             </div>
         ) : (
             <VitalGrid 
@@ -282,6 +283,7 @@ export default function NurseVitalsPage() {
                     </div>
                 </div>
             </div>
-    </div>
+        </div>
+      </div>
   );
 }
