@@ -133,7 +133,7 @@ export default function PatientTable({
                 <div className="flex flex-col items-center gap-2 mx-auto">
                   <Badge className={cn(
                     "border-none text-[8px] font-black uppercase tracking-widest px-4 py-1 rounded-lg shadow-sm w-fit",
-                    patient.is_active ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
+                    patient.is_active ? "bg-[#5C61F2]/10 text-[#5C61F2]" : "bg-rose-50 text-rose-600"
                   )}>
                     {patient.is_active ? "Active" : "Discharged"}
                   </Badge>

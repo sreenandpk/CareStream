@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import api from "@/lib/axios";
 import { useAuthStore } from "@/store/authStore";
 import { usePresenceStore } from "@/store/presenceStore";
@@ -41,6 +41,7 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 
 interface User {
     id: number;
@@ -86,16 +87,57 @@ export default function UserManagement() {
     const [debouncedSearch, setDebouncedSearch] = useState("");
     const { onlineUserIds, setOnlineUsers, lastLogins, lastSecurityEvent } = usePresenceStore(); 
     const [isSyncing, setIsSyncing] = useState(false);
+    const lastHandledEventRef = useRef<number | null>(null);
 
     useEffect(() => {
-        if (lastSecurityEvent) {
-            setUsers(prev => prev.map(u => 
-                u.id === lastSecurityEvent.userId 
-                ? { ...u, is_active: false, email_status: "invalid" as const, is_verified: false }
-                : u
-            ));
+        if (lastSecurityEvent && lastSecurityEvent.timestamp !== lastHandledEventRef.current) {
+            lastHandledEventRef.current = lastSecurityEvent.timestamp;
+            
+            const isInvalid = lastSecurityEvent.status === "invalid";
+
+            setUsers(prev => {
+                const updated = prev.map(u => 
+                    u.id === lastSecurityEvent.userId 
+                    ? { 
+                        ...u, 
+                        is_active: !isInvalid, 
+                        email_status: lastSecurityEvent.status as any, 
+                        is_verified: !isInvalid 
+                      }
+                    : u
+                );
+
+                // 🚀 INSTANT TAB SYNC: If we are on the ACTIVE tab and user is INVALID, remove them
+                if (activeTab === "ACTIVE" && isInvalid) {
+                    return updated.filter(u => u.id !== lastSecurityEvent.userId);
+                }
+                
+                return updated;
+            });
+
+            // 🚨 SHOW THE MESSAGE: Premium Identity Shield Alert
+            if (isInvalid) {
+                toast.error("Identity Shield Alert", {
+                    description: `Email ${lastSecurityEvent.email} is undeliverable. Account automatically deactivated.`,
+                    duration: 3000,
+                    icon: <Shield className="w-5 h-5 text-destructive" />,
+                    style: {
+                        background: 'rgba(255, 255, 255, 0.9)',
+                        backdropFilter: 'blur(8px)',
+                        border: '1px solid var(--destructive)',
+                        borderRadius: '12px',
+                        padding: '16px',
+                        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+                    },
+                });
+            } else {
+                toast.success("Identity Verified", {
+                    description: `Email ${lastSecurityEvent.email} has been verified successfully.`,
+                    duration: 3000,
+                });
+            }
         }
-    }, [lastSecurityEvent]);
+    }, [lastSecurityEvent, activeTab]);
 
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
@@ -372,7 +414,15 @@ export default function UserManagement() {
                                                     </div>
                                                     <div className="flex items-center gap-2 mt-2">
                                                         <Mail className="w-3.5 h-3.5 text-zinc-300" />
-                                                        <span className="text-[10px] text-zinc-400 font-black uppercase tracking-widest">{u.email}</span>
+                                                        <span className="text-[10px] text-zinc-400 font-black uppercase tracking-widest mr-2">{u.email}</span>
+                                                        <Badge className={cn(
+                                                            "text-[8px] font-black uppercase px-2 py-0.5 rounded-md border-none",
+                                                            u.email_status === 'valid' ? "bg-emerald-100 text-emerald-600" :
+                                                            u.email_status === 'pending' ? "bg-amber-100 text-amber-600 animate-pulse" :
+                                                            "bg-rose-100 text-rose-600"
+                                                        )}>
+                                                            {u.email_status}
+                                                        </Badge>
                                                     </div>
                                                 </div>
                                             </div>

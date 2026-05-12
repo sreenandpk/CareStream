@@ -179,7 +179,6 @@ export default function UpdateUserModal({ isOpen, onClose, onSuccess, user }: Up
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent className="bg-white border-none shadow-2xl rounded-2xl p-2">
-                                            <SelectItem value="ADMIN" className="rounded-xl font-bold">Admin</SelectItem>
                                             <SelectItem value="DOCTOR" className="rounded-xl font-bold">Doctor</SelectItem>
                                             <SelectItem value="NURSE" className="rounded-xl font-bold">Nurse</SelectItem>
                                         </SelectContent>

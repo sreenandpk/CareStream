@@ -5,8 +5,6 @@ import api from "@/lib/axios";
 import { 
   BellRing, 
   Search, 
-  Trash2, 
-  ShieldAlert, 
   ShieldCheck, 
   Clock, 
   Activity, 
@@ -22,7 +20,7 @@ import { toast } from "sonner";
 
 export default function DoctorAlertsPage() {
   const { user } = useAuthStore();
-  const { activeAlerts, removeAlert, clearAlerts, setAlerts } = useAlertStore();
+  const { activeAlerts, removeAlert, setAlerts } = useAlertStore();
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -30,7 +28,6 @@ export default function DoctorAlertsPage() {
     if (!user) return;
     const fetchHistory = async () => {
         try {
-            // Doctors use the same backend endpoint logic as Admin/Nurse
             const response = await api.get(`alerts/doctor/?status=ACTIVE`);
             if (response.data.success) {
                 const historical = response.data.data.map((a: any) => ({
@@ -59,7 +56,6 @@ export default function DoctorAlertsPage() {
     const aType = (a.type || "").toLowerCase();
     const dSerial = (a.device_serial || "").toLowerCase();
     const query = search.toLowerCase();
-
     return pName.includes(query) || aType.includes(query) || dSerial.includes(query);
   });
 
@@ -78,9 +74,8 @@ export default function DoctorAlertsPage() {
     }
   };
 
-  // 🧠 CLINICAL SIGNAL CONSOLIDATION: Grouping alerts by patient to facilitate unified assessment.
   const groupedAlerts = filteredAlerts.reduce((acc: Record<string, any[]>, alert) => {
-    const key = alert.patient || "SIGNAL_FAULT";
+    const key = typeof alert.patient === 'string' ? alert.patient : (alert.patient as any)?.name || "SIGNAL_FAULT";
     if (!acc[key]) acc[key] = [];
     acc[key].push(alert);
     return acc;
@@ -95,7 +90,6 @@ export default function DoctorAlertsPage() {
 
   return (
     <div className="space-y-10 w-full p-8">
-        {/* Physician Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
             <div className="space-y-4">
                 <div className="flex items-center gap-3 mb-1">
@@ -108,7 +102,7 @@ export default function DoctorAlertsPage() {
                     Command <span className="text-indigo-500">Center</span>
                 </h1>
                 <p className="text-zinc-500 text-sm font-medium italic max-w-xl leading-relaxed">
-                    Real-time clinical crises needing immediate medical oversight. This matrix groups incidents by patient cluster to ensure a unified high-fidelity response.
+                    Real-time clinical crises needing immediate medical oversight. This matrix groups incidents by patient cluster to ensure a unified response.
                 </p>
             </div>
 
@@ -124,18 +118,16 @@ export default function DoctorAlertsPage() {
             </div>
         </div>
 
-        {/* Search */}
         <div className="relative group mb-12">
             <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 group-focus-within:text-indigo-500 transition-colors" />
             <Input
-                placeholder="Search command stream by patient, type, or station ID..."
+                placeholder="Search command stream..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-14 bg-zinc-900/20 border-zinc-800 text-zinc-100 h-16 rounded-[1.5rem] focus:ring-1 focus:ring-indigo-500/50 transition-all uppercase font-medium text-xs tracking-tight"
             />
         </div>
 
-        {/* Command Matrix (Grouped by Patient) */}
         <div className="space-y-12">
             {patientGroups.length > 0 ? (
                 patientGroups.map((patientName) => {
@@ -155,7 +147,6 @@ export default function DoctorAlertsPage() {
                                     : "bg-zinc-900/10 border-zinc-800 shadow-xl"
                             )}
                         >
-                            {/* Group Header */}
                             <div className="flex flex-wrap items-center justify-between gap-8 mb-10 border-b border-zinc-800/50 pb-10">
                                 <div className="flex items-center gap-8">
                                     <div className={cn(
@@ -173,14 +164,13 @@ export default function DoctorAlertsPage() {
                                                 Active Incident Cluster
                                             </span>
                                             <span className="text-[10px] font-black text-indigo-400/60 uppercase tracking-tighter">
-                                                ID: {group[0].patient_id} • Station: {group[0].device_serial}
+                                                ID: {group[0].patient_id} Station: {group[0].device_serial}
                                             </span>
                                         </div>
                                     </div>
                                 </div>
 
                                 <div className="flex items-center gap-6">
-                                    {/* Cluster Pagination Controls */}
                                     {totalPages > 1 && (
                                         <div className="flex items-center gap-3 bg-black/60 p-3 rounded-2xl border border-white/5">
                                             <Button 
@@ -208,25 +198,21 @@ export default function DoctorAlertsPage() {
                                     )}
                                     <Button 
                                         onClick={async () => {
-                                            const tId = toast.loading(`Clinical Signing: Cluster for ${patientName}...`);
+                                            const tId = toast.loading("Clinical Signing...");
                                             try {
                                                 let successCount = 0;
                                                 for (const a of group) {
-                                                    try {
-                                                        const res = await api.post(`alerts/doctor/${a.id}/resolve/`, {
-                                                            resolution_notes: "Physician acknowledged and managed incident cluster."
-                                                        });
-                                                        if (res.data.success) {
-                                                            removeAlert(a.id);
-                                                            successCount++;
-                                                        }
-                                                    } catch (e) {
-                                                        console.error(`Failed to resolve alert ${a.id}`, e);
+                                                    const res = await api.post(`alerts/doctor/${a.id}/resolve/`, {
+                                                        resolution_notes: "Physician acknowledged cluster."
+                                                    });
+                                                    if (res.data.success) {
+                                                        removeAlert(a.id);
+                                                        successCount++;
                                                     }
                                                 }
-                                                toast.success(`Successfully documented ${successCount} incidents for ${patientName}`, { id: tId });
+                                                toast.success(`Resolved ${successCount} incidents`, { id: tId });
                                             } catch (err) {
-                                                toast.error("Cluster signing encountered logic errors.", { id: tId });
+                                                toast.error("Signing failed.", { id: tId });
                                             }
                                         }}
                                         className={cn(
@@ -236,16 +222,14 @@ export default function DoctorAlertsPage() {
                                     >
                                         Sign & Resolve All
                                     </Button>
-                                    <span className="text-zinc-600 text-sm font-black uppercase tracking-widest mr-4">{group.length} SIGS</span>
                                 </div>
                             </div>
 
-                            {/* 4-Column Alert Matrix */}
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                                 {paginatedAlerts.map((alert) => (
                                     <div 
                                         key={alert.id}
-                                        className="p-6 rounded-[2rem] bg-zinc-950/40 border border-zinc-800/50 flex flex-col justify-between h-full hover:border-indigo-500/30 transition-all group/card"
+                                        className="p-6 rounded-[2rem] bg-zinc-950/40 border border-zinc-800/50 flex flex-col justify-between h-full hover:border-indigo-500/30 transition-all"
                                     >
                                         <div className="space-y-4 mb-8">
                                             <div className="flex justify-between items-start">
@@ -267,7 +251,7 @@ export default function DoctorAlertsPage() {
                                                     {(alert.type || "INCIDENT").replace(/_/g, " ")}
                                                 </h4>
                                                 <p className="text-[10px] font-bold text-zinc-500 uppercase italic leading-relaxed line-clamp-2">
-                                                    "{alert.message}"
+                                                    <span>&quot;</span>{alert.message}<span>&quot;</span>
                                                 </p>
                                             </div>
                                         </div>
@@ -276,15 +260,8 @@ export default function DoctorAlertsPage() {
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-1.5 text-zinc-600">
                                                     <Clock className="w-3 h-3" />
-                                                    <span className="text-[9px] font-black">
-                                                        {(() => {
-                                                            try {
-                                                                const d = new Date(alert.timestamp);
-                                                                return isNaN(d.getTime()) ? "JUST NOW" : formatDistanceToNow(d, { addSuffix: true });
-                                                            } catch {
-                                                                return "JUST NOW";
-                                                            }
-                                                        })()}
+                                                    <span className="text-[9px] font-black uppercase">
+                                                        {formatDistanceToNow(new Date(alert.timestamp), { addSuffix: true })}
                                                     </span>
                                                 </div>
                                             </div>
@@ -309,10 +286,11 @@ export default function DoctorAlertsPage() {
                     </div>
                     <h3 className="text-4xl font-black text-zinc-700 uppercase tracking-tight leading-none mb-4">Command Normal</h3>
                     <p className="text-zinc-800 text-center max-w-md font-bold uppercase text-[11px] tracking-[0.2em] leading-relaxed">
-                        No active physiological triggers or hardware failures reported across shift terminals. Medical oversight is currently in standby.
+                        No active triggers reported. Medical oversight is in standby.
                     </p>
                 </div>
             )}
         </div>
-    );
+    </div>
+  );
 }

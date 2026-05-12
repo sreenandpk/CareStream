@@ -30,11 +30,11 @@ class VitalsSnapshotView(APIView):
 
             # 🔥 CLINICAL SCOPING (Strict Data Isolation)
             if request.user.role == "NURSE":
-                from apps.wards.models import NurseShift
-                active_ward_ids = NurseShift.objects.filter(
-                    nurse=request.user,
+                from apps.wards.models import Ward
+                active_ward_ids = Ward.objects.filter(
+                    nurses=request.user,
                     is_active=True
-                ).values_list("ward_id", flat=True)
+                ).values_list("id", flat=True)
                 queryset = queryset.filter(bed__room__ward_id__in=active_ward_ids)
             elif request.user.role == "DOCTOR":
                 queryset = queryset.filter(bed__patient__doctor=request.user)
@@ -84,11 +84,11 @@ class VitalsHistoryView(APIView):
 
             # 🔥 CLINICAL SCOPING (Strict Data Isolation)
             if request.user.role == "NURSE":
-                from apps.wards.models import NurseShift
-                active_ward_ids = NurseShift.objects.filter(
-                    nurse=request.user,
+                from apps.wards.models import Ward
+                active_ward_ids = Ward.objects.filter(
+                    nurses=request.user,
                     is_active=True
-                ).values_list("ward_id", flat=True)
+                ).values_list("id", flat=True)
                 queryset = queryset.filter(device__bed__room__ward_id__in=active_ward_ids)
             elif request.user.role == "DOCTOR":
                 queryset = queryset.filter(device__bed__patient__doctor=request.user)

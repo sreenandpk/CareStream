@@ -200,7 +200,7 @@ export default function ShiftManagementDialog({
                   Clinical Rotations
                 </DialogTitle>
                 <p className="text-zinc-500 text-[11px] font-black uppercase tracking-widest mt-0.5">
-                  Manage active shifts for <span className="text-indigo-600">"{ward?.name}"</span>
+                  Manage active shifts for <span className="text-indigo-600"><span>&quot;</span>{ward?.name}<span>&quot;</span></span>
                 </p>
               </div>
             </div>

@@ -175,20 +175,20 @@ export default function AdminDashboard() {
                     </div>
                 </div>
 
-                {/* 🛡️ Security Card */}
+                {/* 🛡️ Security Logs Card */}
                 <div 
                     onClick={() => router.push("/dashboard/admin/logs")}
                     className="group relative bg-gradient-to-br from-rose-50 to-white p-8 rounded-[2.5rem] border border-rose-100 hover:shadow-2xl hover:shadow-rose-500/10 transition-all duration-500 cursor-pointer active:scale-[0.98] h-[220px] flex flex-col justify-between overflow-hidden"
                 >
                     <div className="flex justify-between items-start relative z-10">
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-rose-600">Security Alerts</span>
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-rose-600">Security Logs</span>
                         <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-500 border border-rose-50">
                             <Shield className="w-5 h-5 text-rose-600" />
                         </div>
                     </div>
                     <div className="relative z-10">
                         <p className="text-5xl font-black text-rose-950 tracking-tighter leading-none mb-3">{stats.security_alerts}</p>
-                        <p className="text-[10px] font-black text-rose-400 uppercase tracking-widest">Recent Alerts</p>
+                        <p className="text-[10px] font-black text-rose-400 uppercase tracking-widest">Audit Events</p>
                     </div>
                 </div>
             </div>
@@ -299,15 +299,6 @@ export default function AdminDashboard() {
                                 </div>
                             </div>
 
-                            <div className="pt-8 border-t border-zinc-50">
-                                <div className="flex items-center justify-between mb-3 text-left">
-                                    <span className="text-[11px] font-black text-zinc-900 uppercase tracking-widest">System Health</span>
-                                    <span className="text-[11px] font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">{stats.system_health}%</span>
-                                </div>
-                                <div className="w-full h-3 bg-zinc-100 rounded-full overflow-hidden p-0.5">
-                                    <div className="h-full bg-emerald-500 rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(16,185,129,0.4)]" style={{ width: `${stats.system_health}%` }} />
-                                </div>
-                            </div>
                         </div>
                     </Card>
 

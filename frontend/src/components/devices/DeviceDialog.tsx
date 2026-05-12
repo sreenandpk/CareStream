@@ -174,18 +174,18 @@ export default function DeviceDialog({
         if (!val) setNewlyCreatedKey(null);
         onOpenChange(val);
     }}>
-      <DialogContent className="sm:max-w-[500px] bg-white border-none text-zinc-900 shadow-2xl rounded-[2.5rem] p-0 overflow-hidden">
-        <DialogHeader className="p-8 pb-4 bg-indigo-50/50 border-b border-indigo-100">
+      <DialogContent className="sm:max-w-[700px] !bg-white border-none !text-zinc-800 shadow-2xl rounded-[2.5rem] p-0 overflow-hidden">
+        <DialogHeader className="p-8 pb-4 bg-[#5C61F2]/5 border-b border-[#5C61F2]/10">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-[#5C61F2]/10 flex items-center justify-center border border-[#5C61F2]/20">
               <Cpu className="w-6 h-6 text-[#5C61F2]" />
             </div>
             <div className="flex flex-col text-left">
-              <DialogTitle className="text-2xl font-black tracking-tight text-zinc-900">
-                {device ? "Edit Device" : "Add New Device"}
+              <DialogTitle className="text-2xl font-black tracking-tight uppercase !text-zinc-800">
+                {device ? "Edit Device Details" : "Add New Device"}
               </DialogTitle>
               <p className="text-[#5C61F2] text-[11px] font-black uppercase tracking-widest mt-0.5">
-                Device Details & Deployment
+                Device Information & Deployment
               </p>
             </div>
           </div>
@@ -193,28 +193,27 @@ export default function DeviceDialog({
 
         <form onSubmit={handleSubmit} className="p-8 pt-6 space-y-8">
           <div className="space-y-6">
-            <div className="grid grid-cols-1 gap-6">
+            <div className="grid grid-cols-2 gap-6">
               <div className="space-y-2 text-left">
-                <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-400 ml-1">
-                  Display Name
+                <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-500 ml-1">
+                  Device Name
                 </Label>
                 <Input
                   placeholder="e.g. ICU-NORTH-01"
                   value={formData.monitor_label}
                   onChange={(e) => setFormData({ ...formData, monitor_label: e.target.value })}
-                  className="bg-zinc-50 border-none focus-visible:ring-2 focus-visible:ring-[#5C61F2]/10 h-14 rounded-2xl font-black text-zinc-900 placeholder:text-zinc-300 transition-all uppercase tracking-wider"
+                  className="!bg-white border border-zinc-100 focus-visible:ring-2 focus-visible:ring-[#5C61F2]/10 h-14 rounded-2xl font-black !text-zinc-800 placeholder:text-zinc-300 transition-all uppercase tracking-wider"
                 />
               </div>
-
               <div className="space-y-2 text-left">
-                <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-400 ml-1">
+                <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-500 ml-1">
                   Serial Number
                 </Label>
                 <Input
                   placeholder="e.g. SN-9920-X"
                   value={formData.serial_number}
                   onChange={(e) => setFormData({ ...formData, serial_number: e.target.value })}
-                  className="bg-zinc-50 border-none focus-visible:ring-2 focus-visible:ring-[#5C61F2]/10 h-14 rounded-2xl font-black text-zinc-900 uppercase tracking-[0.2em] text-xs transition-all"
+                  className="!bg-white border border-zinc-100 focus-visible:ring-2 focus-visible:ring-[#5C61F2]/10 h-14 rounded-2xl font-black !text-zinc-800 uppercase tracking-[0.2em] text-xs transition-all"
                   required
                 />
               </div>
@@ -222,20 +221,20 @@ export default function DeviceDialog({
 
             <div className="grid grid-cols-2 gap-6">
               <div className="space-y-2 text-left">
-                <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-400 ml-1">
+                <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-500 ml-1">
                   Assigned Bed
                 </Label>
                 <Select
                   value={formData.bed || "none"}
                   onValueChange={(val) => setFormData({ ...formData, bed: val })}
                 >
-                  <SelectTrigger className="bg-zinc-50 border-none focus:ring-2 focus:ring-[#5C61F2]/10 h-14 rounded-2xl font-bold text-zinc-900 px-6 transition-all">
+                  <SelectTrigger className="!bg-white border border-zinc-100 focus:ring-2 focus:ring-[#5C61F2]/10 h-14 rounded-2xl font-bold !text-zinc-800 [&>span]:!text-zinc-800 px-6 transition-all">
                     <SelectValue placeholder="Storage" />
                   </SelectTrigger>
-                  <SelectContent className="bg-white border-none shadow-2xl rounded-2xl p-2">
-                    <SelectItem value="none" className="rounded-xl font-bold text-zinc-500">Inventory / Storage</SelectItem>
+                  <SelectContent className="bg-white border border-zinc-100 shadow-2xl rounded-2xl p-2">
+                    <SelectItem value="none" className="rounded-xl font-bold text-zinc-500 focus:bg-zinc-50">Inventory / Storage</SelectItem>
                     {(beds || []).map((bed) => (
-                      <SelectItem key={bed.id} value={bed.id.toString()} className="rounded-xl font-bold text-zinc-900">
+                      <SelectItem key={bed.id} value={bed.id.toString()} className="rounded-xl font-bold text-zinc-800 focus:bg-[#5C61F2]/10 focus:text-[#5C61F2]">
                         Bed {bed.bed_number}
                       </SelectItem>
                     ))}
@@ -244,20 +243,20 @@ export default function DeviceDialog({
               </div>
 
               <div className="space-y-2 text-left">
-                <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-400 ml-1">
+                <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-500 ml-1">
                   Device Type
                 </Label>
                 <Select
                   value={formData.device_type}
                   onValueChange={(val) => setFormData({ ...formData, device_type: val })}
                 >
-                  <SelectTrigger className="bg-zinc-50 border-none focus:ring-2 focus:ring-[#5C61F2]/10 h-14 rounded-2xl font-bold text-zinc-900 px-6 transition-all">
+                  <SelectTrigger className="!bg-white border border-zinc-100 focus:ring-2 focus:ring-[#5C61F2]/10 h-14 rounded-2xl font-bold !text-zinc-800 [&>span]:!text-zinc-800 px-6 transition-all">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-white border-none shadow-2xl rounded-2xl p-2">
-                    <SelectItem value="ICU_MONITOR" className="rounded-xl font-bold text-zinc-900">Advanced (ICU)</SelectItem>
-                    <SelectItem value="PATIENT_MONITOR" className="rounded-xl font-bold text-zinc-900">Standard Monitor</SelectItem>
-                    <SelectItem value="WEARABLE_SENSOR" className="rounded-xl font-bold text-zinc-900">Mobile Sensor</SelectItem>
+                  <SelectContent className="bg-white border border-zinc-100 shadow-2xl rounded-2xl p-2">
+                    <SelectItem value="ICU_MONITOR" className="rounded-xl font-bold text-zinc-800 focus:bg-[#5C61F2]/10 focus:text-[#5C61F2]">Advanced (ICU)</SelectItem>
+                    <SelectItem value="PATIENT_MONITOR" className="rounded-xl font-bold text-zinc-800 focus:bg-[#5C61F2]/10 focus:text-[#5C61F2]">Standard Monitor</SelectItem>
+                    <SelectItem value="WEARABLE_SENSOR" className="rounded-xl font-bold text-zinc-800 focus:bg-[#5C61F2]/10 focus:text-[#5C61F2]">Mobile Sensor</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -274,12 +273,12 @@ export default function DeviceDialog({
                   value={formData.mode}
                   onValueChange={(val) => setFormData({ ...formData, mode: val })}
                 >
-                  <SelectTrigger className="bg-white border-zinc-200 h-12 rounded-xl font-black text-[10px] uppercase tracking-widest">
+                  <SelectTrigger className="!bg-white border border-zinc-100 h-12 rounded-xl font-black text-[10px] uppercase tracking-widest !text-zinc-800 [&>span]:!text-zinc-800">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-white border-none shadow-2xl rounded-2xl p-2">
-                    <SelectItem value="REAL" className="rounded-xl font-black text-rose-600">Live Hardware</SelectItem>
-                    <SelectItem value="SIMULATION" className="rounded-xl font-black text-[#5C61F2]">Simulated Data</SelectItem>
+                  <SelectContent className="bg-white border border-zinc-100 shadow-2xl rounded-2xl p-2">
+                    <SelectItem value="REAL" className="rounded-xl font-black text-rose-600 focus:bg-rose-50">Real Device</SelectItem>
+                    <SelectItem value="SIMULATION" className="rounded-xl font-black text-[#5C61F2] focus:bg-[#5C61F2]/5">Testing / Simulation</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -295,14 +294,14 @@ export default function DeviceDialog({
                         value={formData.simulation_mode}
                         onValueChange={(val) => setFormData({ ...formData, simulation_mode: val })}
                       >
-                        <SelectTrigger className="bg-white border-zinc-200 h-12 rounded-xl font-black text-[10px] uppercase tracking-tight mt-2 border-dashed">
+                        <SelectTrigger className="!bg-white border border-zinc-100 h-12 rounded-xl font-black text-[10px] uppercase tracking-tight mt-2 border-dashed !text-zinc-800 [&>span]:!text-zinc-800">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="bg-white border-none shadow-2xl rounded-2xl p-2">
-                          <SelectItem value="GLOBAL" className="rounded-xl font-bold">Normal</SelectItem>
-                          <SelectItem value="NORMAL" className="rounded-xl text-emerald-600 font-bold">Healthy</SelectItem>
-                          <SelectItem value="CRITICAL" className="rounded-xl text-rose-600 font-black italic tracking-tight">Emergency</SelectItem>
-                          <SelectItem value="RECOVERY" className="rounded-xl text-[#5C61F2] font-bold">Recovery</SelectItem>
+                        <SelectContent className="bg-white border border-zinc-100 shadow-2xl rounded-2xl p-2">
+                          <SelectItem value="GLOBAL" className="rounded-xl font-bold text-zinc-800">Normal</SelectItem>
+                          <SelectItem value="NORMAL" className="rounded-xl text-emerald-600 font-bold focus:bg-emerald-50">Healthy</SelectItem>
+                          <SelectItem value="CRITICAL" className="rounded-xl text-rose-600 font-black italic tracking-tight focus:bg-rose-50">Emergency</SelectItem>
+                          <SelectItem value="RECOVERY" className="rounded-xl text-[#5C61F2] font-bold focus:bg-[#5C61F2]/5">Recovery</SelectItem>
                         </SelectContent>
                       </Select>
                     </motion.div>
@@ -336,15 +335,15 @@ export default function DeviceDialog({
               </div>
             )}
 
-            <div className="flex items-center justify-between p-6 bg-zinc-50/50 rounded-[2.5rem] border border-dashed border-zinc-200">
+            <div className="flex items-center justify-between p-6 bg-[#F8F9FB] rounded-[2.5rem] border border-zinc-100">
               <div className="space-y-1 text-left">
-                <p className="text-[10px] font-black text-zinc-900 uppercase tracking-widest">Active Status</p>
-                <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest opacity-60">Allow device to send data.</p>
+                <p className="text-[10px] font-black !text-zinc-800 uppercase tracking-widest">Enable Device</p>
+                <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest opacity-60">Allow data transmission from this device.</p>
               </div>
               <Switch
                 checked={formData.is_active}
                 onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
-                className="data-[state=checked]:bg-[#5C61F2] scale-110"
+                className="data-[state=checked]:bg-[#5C61F2] data-[state=unchecked]:bg-zinc-200 scale-110 [&>span]:!bg-white dark:[&>span]:!bg-white border-none shadow-inner"
               />
             </div>
           </div>
@@ -354,9 +353,9 @@ export default function DeviceDialog({
               type="button"
               variant="ghost"
               onClick={() => onOpenChange(false)}
-              className="h-14 px-8 rounded-2xl font-black text-[11px] uppercase tracking-widest text-zinc-400 hover:text-zinc-900 transition-all"
+              className="h-14 px-8 rounded-2xl font-black text-[11px] uppercase tracking-widest text-zinc-400 hover:text-zinc-800 transition-all"
             >
-              Discard
+              Cancel
             </Button>
             <Button
               type="submit"
@@ -368,7 +367,7 @@ export default function DeviceDialog({
               ) : device ? (
                 "Save Changes"
               ) : (
-                "Create Device"
+                "Add Device"
               )}
             </Button>
           </DialogFooter>
@@ -382,13 +381,13 @@ export default function DeviceDialog({
           <div className="w-16 h-16 rounded-2xl bg-amber-50 flex items-center justify-center mb-6 border border-amber-100">
             <AlertTriangle className="w-8 h-8 text-amber-500" />
           </div>
-          <AlertDialogTitle className="text-3xl font-black tracking-tight text-zinc-900 leading-tight">
-            Switch to <br/>Simulation?
+          <AlertDialogTitle className="text-3xl font-black tracking-tight text-zinc-800 leading-tight">
+            Switch to <br/>Test Mode?
           </AlertDialogTitle>
           <AlertDialogDescription className="text-zinc-500 font-bold text-sm leading-relaxed pt-2">
-            Warning: Switching from <span className="text-rose-500 underline decoration-2 underline-offset-4">Live Hardware</span> to <span className="text-[#5C61F2] underline decoration-2 underline-offset-4">Simulation</span> will stop real patient data.
+            Warning: Switching from <span className="text-rose-500 underline decoration-2 underline-offset-4">Real Device</span> to <span className="text-[#5C61F2] underline decoration-2 underline-offset-4">Test Mode</span> will stop real patient data.
             <br/><br/>
-            This action is for testing or training only.
+            This action is for system testing or training only.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="gap-3 mt-8 pt-6 border-t border-zinc-100">
@@ -402,7 +401,7 @@ export default function DeviceDialog({
             }}
             className="h-14 px-10 bg-amber-500 hover:bg-amber-600 text-white shadow-xl shadow-amber-500/20 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all active:scale-95"
           >
-            Switch Now
+            Confirm Switch
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

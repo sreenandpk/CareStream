@@ -4,27 +4,40 @@ import { useState, useEffect } from "react";
 import useVitalsSocket, { VitalData } from "@/hooks/useVitalsSocket";
 import VitalGrid from "@/components/vitals/VitalGrid";
 import MonitoringFilters from "@/components/vitals/MonitoringFilters";
-import { Activity, ShieldCheck, Cpu, Loader2 } from "lucide-react";
+import { 
+    ShieldCheck, 
+    Loader2
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 import api from "@/lib/axios";
 import { generateSyntheticWaveform } from "@/lib/waveform-utils";
-import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/store/authStore";
+import { useVitalsStore } from "@/store/vitalsStore";
+import { useRouter } from "next/navigation";
 
-export default function VitalsAdminPage() {
+export default function DoctorVitalsPage() {
+  const { user } = useAuthStore();
+  const router = useRouter();
   const [filters, setFilters] = useState({ wardId: "all", roomId: "all", bedId: "all" });
-  const [allWards, setAllWards] = useState<any[]>([]);
   const [initialData, setInitialData] = useState<VitalData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [wards, setWards] = useState<any[]>([]);
 
-  // 🚀 ZERO-LAG HANDSHAKE: Loading Flow (Snapshot -> History -> WebSocket)
+  // 🚀 CLINICAL HANDSHAKE: Loading physician-scoped telemetry grid
   useEffect(() => {
+    let active = true;
+    const safetyTimer = setTimeout(() => {
+        if (active) setLoading(false);
+    }, 5000); 
+
     async function synchronizeNexus() {
       try {
-        setLoading(true);
+        if (active) setLoading(true);
 
-        // STEP 0: Fetch All Wards for Clinical Context (Shared Clinical Endpoint)
+        // STEP 0: Fetch Clinical Context (Shared Endpoint, role-filtered in backend)
         const wardsRes = await api.get("wards/nurse/wards/");
-        if (wardsRes.data.success) {
-            setAllWards(wardsRes.data.data || []);
+        if (wardsRes.data.success && active) {
+            setWards(wardsRes.data.data || []);
         }
 
         const params = new URLSearchParams();
@@ -32,9 +45,11 @@ export default function VitalsAdminPage() {
         if (filters.roomId !== "all") params.append("room", filters.roomId);
         if (filters.bedId !== "all") params.append("bed", filters.bedId);
 
-        // STEP 1: Fetch Instant Snapshot (Vitals cached in Device)
+        // STEP 1: Fetch Physician-Scoped Instant Snapshot
         const snapshotRes = await api.get(`vitals/admin/snapshot/${params.toString() ? `?${params.toString()}` : ""}`);
         
+        if (!active) return;
+
         if (snapshotRes.data?.success) {
            const baseSnapshot = (snapshotRes.data?.results || []).map((d: any) => ({
               device: {
@@ -69,10 +84,10 @@ export default function VitalsAdminPage() {
            setInitialData(baseSnapshot);
         }
 
-        // STEP 2: Fetch Recent History (Last 5 Mins)
+        // STEP 2: Fetch History Backfill
         try {
           const historyRes = await api.get(`vitals/admin/history/?minutes=5${params.toString() ? `&${params.toString()}` : ""}`);
-          if (historyRes.data?.success) {
+          if (historyRes.data?.success && active) {
             const historyMap: Record<number, any[]> = {};
             (historyRes.data?.results || []).forEach((h: any) => {
                 if (!historyMap[h.device_id]) historyMap[h.device_id] = [];
@@ -90,18 +105,20 @@ export default function VitalsAdminPage() {
               };
             }));
           }
-        } catch (he) { console.warn("Nexus Admin: History failed", he); }
+        } catch (he) { console.warn("Nexus: History failed", he); }
 
-      } catch (e) { console.error("Dashboard: Sync failure", e); }
-      finally { setLoading(false); }
+      } catch (e) { console.error("Physician Monitor: Handshake failure", e); }
+      finally { if (active) { setLoading(false); clearTimeout(safetyTimer); } }
     }
     synchronizeNexus();
+    return () => { active = false; clearTimeout(safetyTimer); };
   }, [filters]);
 
-  const { vitals: liveVitals, connected } = useVitalsSocket(initialData);
+  const { vitalsMap, connected: globalConnected } = useVitalsStore();
+  const liveVitals = Object.values(vitalsMap);
 
   // 🏥 CLINICAL MERGE ENGINE: Blend live vitals with all assigned patients
-  const allAssignedPatients = allWards.flatMap(w => 
+  const allAssignedPatients = wards.flatMap(w => 
     w.rooms.flatMap((r: any) => 
         r.beds.filter((b: any) => b.patient).map((b: any) => ({
             id: b.patient.id,
@@ -115,9 +132,10 @@ export default function VitalsAdminPage() {
     )
   );
 
-  const vitals = allAssignedPatients.length > 0 ? allAssignedPatients.map(patient => {
+  const vitals = allAssignedPatients.map(patient => {
     const live = liveVitals.find(v => v.patient.id === patient.id);
     if (live) return live;
+
     return {
         device: { id: 0, serial: patient.device_serial || "UNKNOWN", label: patient.device_serial, mode: "REAL", state: "OFFLINE", last_seen: "" },
         patient: { id: patient.id, name: patient.name, location: patient.location, ward_id: patient.ward_id },
@@ -128,24 +146,23 @@ export default function VitalsAdminPage() {
         bed_id: patient.bed_id,
         system: { signal_state: "LOST" }
     } as VitalData;
-  }) : liveVitals;
+  });
 
-  // 🔍 HIERARCHICAL FILTERING LOGIC
   const filteredVitals = (vitals || []).filter(v => {
     const matchesWard = filters.wardId === "all" || v.ward_id === Number(filters.wardId);
-    const matchesRoom = filters.roomId === "all" || v.room_id === Number(filters.roomId);
-    const matchesBed = filters.bedId === "all" || v.bed_id === Number(filters.bedId);
+    const matchesRoom = filters.room_id === Number(filters.roomId) || filters.roomId === "all";
+    const matchesBed = filters.bed_id === Number(filters.bedId) || filters.bedId === "all";
     return matchesWard && matchesRoom && matchesBed;
   });
 
-
   return (
-    <div className="p-8 pt-16 space-y-12 w-full min-h-screen bg-[#F8F9FB] relative overflow-hidden">
+    <div className="p-8 pt-16 space-y-12 w-full min-h-screen bg-[#F8F9FB] relative overflow-hidden text-left">
+        
         {/* Clinical Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-10">
             <div className="space-y-2">
-                <h1 className="text-5xl font-black tracking-tight text-zinc-900">
-                    Real-time <span className="text-[#5C61F2]">Monitoring</span>
+                <h1 className="text-5xl font-black tracking-tight text-zinc-900 uppercase">
+                    Patient <span className="text-[#5C61F2]">Monitoring</span>
                 </h1>
             </div>
 
@@ -153,38 +170,30 @@ export default function VitalsAdminPage() {
                 <div className="p-8 bg-white rounded-[2.5rem] border border-zinc-200/60 shadow-sm flex flex-col items-center min-w-[200px]">
                     <span className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
                         <ShieldCheck className="w-4 h-4 text-[#5C61F2]" />
-                        Active Units
+                        Monitored Patients
                     </span>
                     <span className="text-5xl font-black text-zinc-900 tracking-tighter">{filteredVitals.length}</span>
                 </div>
             </div>
         </div>
 
-
         {/* Filters */}
         <MonitoringFilters onFilterChange={setFilters} />
 
         {/* Monitoring Body */}
         {loading ? (
-            <div className="flex-1 flex flex-col items-center justify-center bg-white rounded-[3rem] border border-zinc-100 shadow-sm relative min-h-[500px] overflow-hidden text-center p-12">
-                 <div className="relative mb-6">
-                   <Activity className="w-16 h-16 text-zinc-100 animate-pulse" />
-                   <div className="absolute inset-0 flex items-center justify-center">
-                       <Loader2 className="w-8 h-8 text-[#5C61F2] animate-spin" />
-                   </div>
-                 </div>
-                 <span className="text-[10px] text-zinc-400 font-black uppercase tracking-[0.3em]">Hardware Synchronization in progress...</span>
-                 <p className="text-[9px] text-zinc-500 font-bold uppercase mt-2">Checking signal integrity through telemetry router</p>
+            <div className="flex flex-col items-center justify-center p-32">
+                <Loader2 className="w-12 h-12 text-[#5C61F2] animate-spin mb-6" />
+                <span className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-700">Loading Clinical Data...</span>
             </div>
         ) : (
             <VitalGrid 
                 vitals={vitals} 
-                connected={connected} 
+                connected={globalConnected} 
                 filters={filters} 
                 filteredVitals={filteredVitals} 
             />
         )}
-
       </div>
   );
 }

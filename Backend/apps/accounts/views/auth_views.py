@@ -91,7 +91,7 @@ class LoginView(APIView):
         audit_logger.info(
             f"User found {user.username}"
         )
-        if user.is_locked:
+        if user.is_locked and user.role != "ADMIN":
             app_logger.warning(f"Login failed: User {user.username} is LOCKED")
             security_logger.warning(
                 f"Locked account login {user.username}"

@@ -99,6 +99,12 @@ class User(AbstractUser):
             self.is_staff = True
             self.is_verified = True
             self.role = "ADMIN"
+        
+        # 🛡️ Admin Security Shield: Admin accounts cannot be locked by failed attempts
+        if self.role == "ADMIN":
+            self.is_locked = False
+            self.failed_login_attempts = 0
+            
         super().save(*args, **kwargs)
 
     def __str__(self):

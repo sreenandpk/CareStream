@@ -1,0 +1,95 @@
+services:
+  db:
+    image: postgres:16-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    # Use hardcoded defaults or ensure .env is in root for compose interpolation
+    environment:
+      - POSTGRES_DB=carestream_db
+      - POSTGRES_USER=carestream_user
+      - POSTGRES_PASSWORD=david@9539379577
+    ports:
+      - "5433:5432"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  backend:
+    build: ./backend
+    command: sh -c "[ ! -f .env ] && cp .env.example .env; python manage.py migrate && python manage.py init_admin && daphne -b 0.0.0.0 -p 8000 config.asgi:application"
+    volumes:
+      - ./backend:/app
+    env_file:
+      - ./backend/.env
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - REDIS_URL=redis://redis:6379/0
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+
+  worker:
+    build: ./backend
+    command: sh -c "[ ! -f .env ] && cp .env.example .env; celery -A config worker -l info --pool=solo"
+    volumes:
+      - ./backend:/app
+    env_file:
+      - ./backend/.env
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - REDIS_URL=redis://redis:6379/0
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - db
+      - redis
+
+  beat:
+    build: ./backend
+    command: sh -c "[ ! -f .env ] && cp .env.example .env; celery -A config beat -l info"
+    volumes:
+      - ./backend:/app
+    env_file:
+      - ./backend/.env
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - REDIS_URL=redis://redis:6379/0
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - db
+      - redis
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        - NEXT_PUBLIC_API_URL=http://localhost:8000/api/
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000/api/
+    depends_on:
+      - backend
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    command:
+      - http
+      - backend:8000
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

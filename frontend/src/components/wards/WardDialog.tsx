@@ -115,18 +115,18 @@ export default function WardDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[550px] bg-white border-none text-zinc-900 shadow-2xl rounded-[2.5rem] p-0 overflow-hidden">
-        <DialogHeader className="p-8 pb-4 bg-indigo-50/50 border-b border-indigo-100">
+      <DialogContent className="sm:max-w-[550px] !bg-white border-none !text-zinc-800 shadow-2xl rounded-[2.5rem] p-0 overflow-hidden">
+        <DialogHeader className="p-8 pb-4 bg-[#5C61F2]/5 border-b border-[#5C61F2]/10">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20">
               <Building2 className="w-6 h-6 text-indigo-600" />
             </div>
             <div className="flex flex-col text-left">
               <DialogTitle className="text-2xl font-black tracking-tight">
-                {ward ? "Edit Ward" : "Add New Ward"}
+                {ward ? "Edit Ward Details" : "Add New Ward"}
               </DialogTitle>
               <p className="text-[#5C61F2] text-[11px] font-black uppercase tracking-widest mt-0.5">
-                Ward Details & Staffing
+                Ward Information & Staff Assignment
               </p>
             </div>
           </div>
@@ -136,7 +136,7 @@ export default function WardDialog({
           <div className="space-y-6">
             <div className="grid grid-cols-3 gap-6">
               <div className="col-span-2 space-y-2 text-left">
-                <Label htmlFor="name" className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-400 ml-1">
+                <Label htmlFor="name" className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-500 ml-1">
                   Ward Name
                 </Label>
                 <Input
@@ -144,12 +144,12 @@ export default function WardDialog({
                   placeholder="e.g. Intensive Care Unit"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="bg-zinc-50 border-none focus-visible:ring-2 focus-visible:ring-indigo-500/10 h-14 rounded-2xl font-bold text-zinc-900 placeholder:text-zinc-300 transition-all"
+                  className="!bg-white border border-zinc-100 focus-visible:ring-2 focus-visible:ring-indigo-500/10 h-14 rounded-2xl font-bold !text-zinc-800 placeholder:text-zinc-300 transition-all"
                   required
                 />
               </div>
               <div className="space-y-2 text-left">
-                <Label htmlFor="floor" className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-400 ml-1">
+                <Label htmlFor="floor" className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-500 ml-1">
                   Floor
                 </Label>
                 <Input
@@ -158,15 +158,15 @@ export default function WardDialog({
                   min="0"
                   value={formData.floor}
                   onChange={(e) => setFormData({ ...formData, floor: parseInt(e.target.value) || 0 })}
-                  className="bg-zinc-50 border-none focus-visible:ring-2 focus-visible:ring-indigo-500/10 h-14 rounded-2xl font-black text-zinc-900 text-lg transition-all"
+                  className="!bg-white border border-zinc-100 focus-visible:ring-2 focus-visible:ring-indigo-500/10 h-14 rounded-2xl font-black !text-zinc-800 text-lg transition-all"
                   required
                 />
               </div>
             </div>
 
             <div className="space-y-2 text-left">
-              <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-400 ml-1">
-                Assign Nurses
+              <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-500 ml-1">
+                Select Nurses
               </Label>
               <div className="max-h-[220px] overflow-y-auto border border-zinc-100 rounded-[2rem] p-4 bg-zinc-50/50 space-y-2 custom-scrollbar">
                 {fetchingNurses ? (
@@ -208,13 +208,13 @@ export default function WardDialog({
 
             <div className="flex items-center justify-between p-6 bg-zinc-50/50 rounded-[2.5rem] border border-dashed border-zinc-200">
               <div className="space-y-1 text-left">
-                <p className="text-[10px] font-black text-zinc-900 uppercase tracking-widest">Active Status</p>
-                <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest opacity-60">Allow patient admissions to this ward.</p>
+                <p className="text-[10px] font-black !text-zinc-800 uppercase tracking-widest">Enable Ward</p>
+                <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest opacity-60">Allow patients to be assigned to this ward.</p>
               </div>
               <Switch
                 checked={formData.is_active}
                 onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
-                className="data-[state=checked]:bg-[#5C61F2] scale-110"
+                className="data-[state=checked]:bg-[#5C61F2] data-[state=unchecked]:bg-zinc-200 scale-110 [&>span]:!bg-white dark:[&>span]:!bg-white border-none shadow-inner"
               />
             </div>
           </div>
@@ -224,9 +224,9 @@ export default function WardDialog({
               type="button"
               variant="ghost"
               onClick={() => onOpenChange(false)}
-              className="h-14 px-8 rounded-2xl font-black text-[11px] uppercase tracking-widest text-zinc-400 hover:text-zinc-900 transition-all"
+              className="h-14 px-8 rounded-2xl font-black text-[11px] uppercase tracking-widest text-zinc-400 hover:text-zinc-800 transition-all"
             >
-              Discard
+              Cancel
             </Button>
             <Button
               type="submit"
@@ -238,7 +238,7 @@ export default function WardDialog({
               ) : ward ? (
                 "Save Changes"
               ) : (
-                "Create Ward"
+                "Add Ward"
               )}
             </Button>
           </DialogFooter>

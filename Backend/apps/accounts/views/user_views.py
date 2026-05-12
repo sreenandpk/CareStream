@@ -20,6 +20,7 @@ import time
 from apps.accounts.serializers.user_serializers import (
     UserListSerializer, UserUpdateSerializer, CreateUserSerializer
 )
+from apps.accounts.tasks import validate_user_email_background
 from apps.core.role_permissions import IsAdmin
 from apps.core.pagination import StandardResultsSetPagination
 from apps.accounts.services.email_service import (
@@ -66,49 +67,19 @@ class CreateUserView(APIView):
             # Send credentials via Gmail (Deliverability) after signal is out
             send_user_credentials(email, user.username, raw_password)
 
-            # 2. 🛡️ THE INTERCEPTOR BUFFER: Wait for SendGrid signal (20 seconds)
-            start_time = time.time()
-            bounce_reason = None
-            app_logger.info(f"Registration Interceptor active for {email}. Polling Redis...")
-            
-            # Low-latency polling loop
-            while time.time() - start_time < 20.0:
-                bounce_reason = cache.get(f"sec_block:{email.lower()}")
-                if bounce_reason:
-                    app_logger.warning(f"Registration Interceptor caught BOUNCE for {email} after {round(time.time() - start_time, 2)}s")
-                    break
-                time.sleep(0.5)
-
-
-            if not bounce_reason:
-                app_logger.info(f"Registration Interceptor cleared {email} after 20s. No bounce detected.")
-
-
-            # 3. 🚨 BLOCKING ACTION: If bounce detected, self-destruct
-            if bounce_reason:
-                security_logger.warning(f"Registration REJECTED by SendGrid: {email}. Reason: {bounce_reason}")
-                user.delete() # 💣 Pure SendGrid Lockdown: Remove from existence
-                cache.delete(f"sec_block:{email.lower()}")
-
-                
-                return Response(
-                    {
-                        "success": False, 
-                        "error": " This email address is undeliverable."
-                    },
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+            # 2. 🛡️ THE INTERCEPTOR (Background): Offload 20s polling to Celery
+            validate_user_email_background.delay(user.id, email)
+            app_logger.info(f"Identity validation offloaded to background for {email}")
 
         except Exception as e:
             error_logger.error(f"User registration aborted: {str(e)}")
-            # 🚨 EMERGENCY WIPE: If email failed or transport died, don't leave a ghost user
             if 'user' in locals():
                 user.delete()
                 
             return Response(
                 {
                     "success": False, 
-                    "error": "The email account that you tried to reach does not exist."
+                    "error": "Account registry failure. Please try again."
                 },
                 status=status.HTTP_400_BAD_REQUEST
             )
@@ -313,42 +284,11 @@ class UserUpdateView(APIView):
                 # 1. 🛡️ IDENTITY SHIELD: Trigger the delivery signal (Source: SENDGRID)
                 send_identity_verification_signal(new_email, user.username)
                 
-                # 2. 🕒 WAIT: Intercept SendGrid webhook signals
-                start_time = time.time()
-                bounce_reason = None
-                app_logger.info(f"INTERCEPTOR START: Ensuring mailbox deliverability for {new_email.lower()}...")
-                app_logger.info(f"Interceptor active for {new_email}. Polling Redis for 20s...")
-
-                
-                while time.time() - start_time < 20.0:
-                    elapsed = int(time.time() - start_time)
-                    if elapsed > 0 and elapsed % 5 == 0:
-                        app_logger.info(f"POLLING: Still waiting for SendGrid response... ({elapsed}s/20s)")
-                        
-                    bounce_reason = cache.get(f"sec_block:{new_email.lower()}")
-                    if bounce_reason:
-                        app_logger.warning(f"BOUNCE CAUGHT: Interceptor found block! Block detected at {elapsed}s.")
-                        break
-                    time.sleep(0.5)
-
-
-
-                
-                if not bounce_reason:
-                    app_logger.info(f"CLEARED: No bounce received in 20s. Proceeding to OTP challenge.")
-                    app_logger.info(f"Interceptor cleared {new_email} after 20s. No bounce detected.")
-
-
-                
-                # 3. 🚨 BLOCK: If mailbox failed deliverability check
-                if bounce_reason:
-                    security_logger.warning(f"Email Update REJECTED by SendGrid: {new_email}. Reason: {bounce_reason}")
-                    cache.delete(f"sec_block:{new_email.lower()}")
-
-                    return Response(
-                        {"success": False, "error": "The email account that you tried to reach does not exist."},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
+                # 2. 🕒 BACKGROUND INTERCEPTOR: Offload deliverability check to Celery
+                user.email_status = "pending"
+                user.save()
+                validate_user_email_background.delay(user.id, new_email)
+                app_logger.info(f"Identity change validation offloaded to background for {new_email}")
                 
                 # 4. 🔑 CHALLENGE: Generate OTP to the NEW email
                 generate_otp(user, "EMAIL_CHANGE", custom_email=new_email)

@@ -128,9 +128,9 @@ class CreateUserSerializer(serializers.ModelSerializer):
 
         user.force_password_reset = True
         
-        # 🛡️ Professional Setup: Admin-created accounts are auto-verified
+        # 🛡️ Initial status is pending for background verification
         user.is_verified = True
-        user.email_status = "valid" 
+        user.email_status = "pending" 
 
         user.save()
 

@@ -1,4 +1,5 @@
 import logging
+from django.db import models
 from django.shortcuts import get_object_or_404
 
 from rest_framework.views import APIView
@@ -25,12 +26,19 @@ class NurseVitalListView(APIView):
 
         app_logger.info(f"Nurse vitals list {user.username}")
 
+        from apps.wards.models import Ward
+        assigned_ward_ids = Ward.objects.filter(
+            nurses=user,
+            is_active=True
+        ).values_list("id", flat=True)
+
         vitals = (
             Vital.objects.filter(
-                patient__nurse=user
+                models.Q(patient__bed__room__ward_id__in=assigned_ward_ids) |
+                models.Q(patient__primary_nurse=user)
             )
             .select_related("patient", "device")
-            .order_by("-recorded_at")[:100]   # 🔥 LIMIT
+            .order_by("-recorded_at")[:100]
         )
 
         serializer = NurseVitalSerializer(vitals, many=True)

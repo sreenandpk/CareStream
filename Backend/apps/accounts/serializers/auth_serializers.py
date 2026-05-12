@@ -24,7 +24,7 @@ class LoginSerializer(serializers.Serializer):
                 "Invalid credentials"
             )
 
-        if user.is_locked:
+        if user.is_locked and user.role != "ADMIN":
             raise serializers.ValidationError(
                 "Account locked due to multiple failed attempts. Please contact support."
             )

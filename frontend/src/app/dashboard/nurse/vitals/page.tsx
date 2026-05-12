@@ -5,17 +5,10 @@ import useVitalsSocket, { VitalData } from "@/hooks/useVitalsSocket";
 import VitalGrid from "@/components/vitals/VitalGrid";
 import MonitoringFilters from "@/components/vitals/MonitoringFilters";
 import { 
-    Activity, 
     ShieldCheck, 
     Cpu, 
-    Zap, 
     Loader2,
-    LayoutDashboard,
-    Clock,
-    Monitor,
-    Shield,
-    LogOut,
-    AlertTriangle
+    Clock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import api from "@/lib/axios";
@@ -169,10 +162,6 @@ export default function NurseVitalsPage() {
     return matchesWard && matchesRoom && matchesBed;
   });
 
-  const criticalCount = filteredVitals.filter(v => 
-    v.vitals?.heart_rate && (v.vitals.heart_rate > 130 || v.vitals.heart_rate < 45) || 
-    (v.vitals?.spo2 && v.vitals.spo2 < 88)
-  ).length;
 
   return (
     <div className="p-8 pt-16 space-y-12 w-full min-h-screen bg-[#F8F9FB] relative overflow-hidden">
@@ -188,13 +177,6 @@ export default function NurseVitalsPage() {
             </div>
 
             <div className="flex gap-6">
-                 <div className="p-8 bg-white rounded-[2.5rem] border border-zinc-200/60 shadow-sm flex flex-col items-center min-w-[200px]">
-                    <span className="text-[11px] font-black text-rose-500 uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
-                        <Activity className="w-4 h-4 animate-pulse" />
-                        Urgent Alerts
-                    </span>
-                    <span className="text-5xl font-black text-zinc-900 tracking-tighter">{criticalCount}</span>
-                </div>
                 <div className="p-8 bg-white rounded-[2.5rem] border border-zinc-200/60 shadow-sm flex flex-col items-center min-w-[200px]">
                     <span className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
                         <ShieldCheck className="w-4 h-4 text-[#5C61F2]" />
@@ -205,17 +187,6 @@ export default function NurseVitalsPage() {
             </div>
         </div>
 
-        {/* Global Warnings */}
-        {criticalCount > 0 && (
-            <div className="p-5 bg-rose-50 border border-rose-100 text-rose-600 rounded-[2rem] flex items-center gap-6 shadow-sm">
-                <div className="w-10 h-10 rounded-xl bg-rose-500 flex items-center justify-center text-white shadow-lg shadow-rose-500/20">
-                    <AlertTriangle className="w-5 h-5" />
-                </div>
-                <span className="text-sm font-black uppercase tracking-[0.1em]">
-                    Attention: {criticalCount} patients need immediate care. Please check their status.
-                </span>
-            </div>
-        )}
 
         {/* Filters */}
         <MonitoringFilters onFilterChange={setFilters} />
@@ -235,55 +206,6 @@ export default function NurseVitalsPage() {
             />
         )}
 
-        {/* System Fidelity Footer */}
-        <div className="flex items-center justify-between p-10 bg-white rounded-[3rem] border border-zinc-200/60 shadow-sm">
-            <div className="flex items-center gap-10">
-                <div className="flex items-center gap-4">
-                    <div className={cn("w-3 h-3 rounded-full", globalConnected ? "bg-emerald-500 shadow-[0_0_12px_#10b981]" : "bg-rose-500")} />
-                    <span className="text-[11px] font-black text-zinc-900 uppercase tracking-[0.2em]">
-                        {globalConnected ? "System Online" : "Connecting..."}
-                    </span>
-                </div>
-                <div className="w-px h-8 bg-zinc-100" />
-                <div className="flex flex-col">
-                    <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">Signal Strength</span>
-                    <span className="text-lg font-black text-emerald-600 tracking-tight">
-                        {(() => {
-                            if (!globalConnected) return "0%";
-                            if (filteredVitals.length === 0) return "100%";
-                            
-                            const liveDevices = filteredVitals.filter(v => v.device.state === "LIVE");
-                            if (liveDevices.length === 0) return "0%";
-
-                            const totalHealth = liveDevices.reduce((acc, v) => {
-                                const rssi = v.system?.rssi || -60;
-                                if (rssi > -50) return acc + 100;
-                                if (rssi > -70) return acc + 80;
-                                if (rssi > -85) return acc + 50;
-                                return acc + 20;
-                            }, 0);
-                            return `${Math.round(totalHealth / liveDevices.length)}%`;
-                        })()}
-                    </span>
-                </div>
-            </div>
-            <div className="flex items-center gap-10">
-                 <div className="flex flex-col items-end">
-                    <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">Latency</span>
-                    <span className="text-lg font-black text-zinc-400 tracking-tight italic">
-                        {globalLatency !== null ? `${globalLatency}ms` : "---"}
-                    </span>
-                </div>
-                <div className="w-px h-10 bg-zinc-100" />
-                <div className="flex flex-col items-end">
-                    <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">Observation Pool</span>
-                    <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-[#5C61F2]" />
-                        <span className="text-lg font-black text-zinc-900 tracking-tight">Real-Time</span>
-                    </div>
-                </div>
-            </div>
-        </div>
       </div>
   );
 }

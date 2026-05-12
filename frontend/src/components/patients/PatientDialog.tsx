@@ -181,86 +181,88 @@ export default function PatientDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[650px] bg-white border-none text-zinc-900 shadow-2xl rounded-[2.5rem] p-0 overflow-hidden">
-        <DialogHeader className="p-8 pb-4 bg-emerald-50/50 border-b border-emerald-100">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
-              <User className="w-6 h-6 text-emerald-600" />
+      <DialogContent className="sm:max-w-[1000px] !bg-white border-none !text-zinc-800 shadow-2xl rounded-[2.5rem] p-0 overflow-hidden">
+        <DialogHeader className="p-8 pb-4 bg-[#5C61F2]/5 border-b border-[#5C61F2]/10">
+          <div className="flex items-center gap-4 text-left">
+            <div className="w-12 h-12 rounded-2xl bg-[#5C61F2]/10 flex items-center justify-center border border-[#5C61F2]/20">
+              <User className="w-6 h-6 text-[#5C61F2]" />
             </div>
-            <div className="flex flex-col text-left">
-              <DialogTitle className="text-2xl font-black tracking-tight">
-                {patient ? "Identity Calibration" : "New Patient Admission"}
+            <div className="flex flex-col">
+              <DialogTitle className="text-2xl font-black tracking-tight uppercase">
+                {patient ? "Edit Patient Details" : "Add New Patient"}
               </DialogTitle>
-              <p className="text-emerald-600 text-[11px] font-black uppercase tracking-widest mt-0.5">
-                Clinical Health Record & Assignment
+              <p className="text-[#5C61F2] text-[10px] font-black uppercase tracking-widest mt-0.5">
+                Patient Information & Bed Assignment
               </p>
             </div>
           </div>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="p-8 pt-6 space-y-8">
+        <form onSubmit={handleSubmit} className="p-10 pt-6 space-y-6">
           <div className="space-y-6">
-            <div className="grid grid-cols-4 gap-6">
-              <div className="col-span-3 space-y-2 text-left">
-                <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-400 ml-1">Legal Patient Name</Label>
+            <div className="grid grid-cols-12 gap-6">
+              <div className="col-span-6 space-y-2 text-left">
+                <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-500 ml-1">Full Name</Label>
                 <Input
                   placeholder="Full Legal Name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="bg-zinc-50 border-none h-14 rounded-2xl focus-visible:ring-2 focus-visible:ring-emerald-500/10 font-bold text-zinc-900 placeholder:text-zinc-300 transition-all"
+                  className="!bg-white border border-zinc-100 h-14 rounded-2xl focus-visible:ring-2 focus-visible:ring-[#5C61F2]/10 font-bold !text-zinc-800 placeholder:text-zinc-300 transition-all"
                   required
                 />
               </div>
-              <div className="space-y-2 text-left">
-                <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-400 ml-1">Age (Years)</Label>
+              <div className="col-span-3 space-y-2 text-left">
+                <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-500 ml-1">Age</Label>
                 <Input
                   type="number"
                   min="0"
                   max="150"
                   value={formData.age}
                   onChange={(e) => setFormData({ ...formData, age: parseInt(e.target.value) || 0 })}
-                  className="bg-zinc-50 border-none h-14 rounded-2xl focus-visible:ring-2 focus-visible:ring-emerald-500/10 font-black text-zinc-900 text-lg transition-all"
+                  className="!bg-white border border-zinc-100 h-14 rounded-2xl focus-visible:ring-2 focus-visible:ring-[#5C61F2]/10 font-black !text-zinc-800 text-lg transition-all text-center"
                   required
                 />
               </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-2 text-left">
-                <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-400 ml-1">Biological Sex</Label>
+              <div className="col-span-3 space-y-2 text-left">
+                <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-500 ml-1">Gender</Label>
                 <Select
                   value={formData.gender}
                   onValueChange={(val) => setFormData({ ...formData, gender: val })}
                 >
-                  <SelectTrigger className="bg-zinc-50 border-none h-14 rounded-2xl focus:ring-2 focus:ring-emerald-500/10 font-bold text-zinc-900 px-6 transition-all">
+                  <SelectTrigger className="!bg-white border border-zinc-100 h-14 rounded-2xl focus:ring-2 focus:ring-[#5C61F2]/10 font-bold !text-zinc-800 [&>span]:!text-zinc-800 px-6 transition-all">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-white border-none shadow-2xl rounded-2xl p-2">
-                    <SelectItem value="MALE" className="rounded-xl font-bold">Male Identification</SelectItem>
-                    <SelectItem value="FEMALE" className="rounded-xl font-bold">Female Identification</SelectItem>
-                    <SelectItem value="OTHER" className="rounded-xl font-bold">Non-Binary / Other</SelectItem>
+                  <SelectContent className="bg-white border border-zinc-100 shadow-2xl rounded-2xl p-2">
+                    <SelectItem value="MALE" className="rounded-xl font-bold text-zinc-800 focus:bg-[#5C61F2]/10 focus:text-[#5C61F2]">Male</SelectItem>
+                    <SelectItem value="FEMALE" className="rounded-xl font-bold text-zinc-800 focus:bg-[#5C61F2]/10 focus:text-[#5C61F2]">Female</SelectItem>
+                    <SelectItem value="OTHER" className="rounded-xl font-bold text-zinc-800 focus:bg-[#5C61F2]/10 focus:text-[#5C61F2]">Other</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+            </div>
 
-              <div className="space-y-2 text-left">
-                <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-400 ml-1">Assigned Care Unit (Bed)</Label>
+            <div className="grid grid-cols-12 gap-6 p-6 bg-[#F8F9FB] rounded-[2.5rem] border border-zinc-100">
+              <div className="col-span-4 space-y-2 text-left">
+                <div className="flex items-center gap-2 mb-1 ml-1">
+                  <Hospital className="w-3 h-3 text-[#5C61F2]" />
+                  <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Bed Number</Label>
+                </div>
                 <Select
                   value={formData.bed}
                   onValueChange={(val) => setFormData({ ...formData, bed: val })}
                   required
                 >
-                  <SelectTrigger className="bg-zinc-50 border-none h-14 rounded-2xl focus:ring-2 focus:ring-emerald-500/10 font-bold text-zinc-900 px-6 transition-all">
-                    <SelectValue placeholder="Locate available bed" />
+                  <SelectTrigger className="!bg-white border border-zinc-100 h-12 rounded-xl focus:ring-2 focus:ring-[#5C61F2]/10 font-bold !text-zinc-800 [&>span]:!text-zinc-800 px-4 shadow-sm">
+                    <SelectValue placeholder="Select Bed" />
                   </SelectTrigger>
-                  <SelectContent className="bg-white border-none shadow-2xl rounded-2xl p-2">
+                  <SelectContent className="bg-white border border-zinc-100 shadow-2xl rounded-2xl p-2">
                     {beds.length === 0 ? (
                       <div className="p-4 text-center">
-                        <p className="text-[10px] font-black text-rose-500 uppercase">No Available Beds</p>
+                        <p className="text-[10px] font-black text-rose-500 uppercase">None Available</p>
                       </div>
                     ) : (
                       beds.map((bed) => (
-                        <SelectItem key={bed.id} value={bed.id.toString()} className="rounded-xl font-bold">
+                        <SelectItem key={bed.id} value={bed.id.toString()} className="rounded-xl font-bold text-zinc-800 focus:bg-[#5C61F2]/10 focus:text-[#5C61F2]">
                           Bed {bed.bed_number}
                         </SelectItem>
                       ))
@@ -268,34 +270,22 @@ export default function PatientDialog({
                   </SelectContent>
                 </Select>
               </div>
-            </div>
 
-            <div className="space-y-2 text-left">
-              <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-400 ml-1">Clinical Admission Diagnosis</Label>
-              <Textarea
-                placeholder="Primary diagnosis and clinical notes..."
-                value={formData.diagnosis}
-                onChange={(e) => setFormData({ ...formData, diagnosis: e.target.value })}
-                className="bg-zinc-50 border-none rounded-[2rem] focus-visible:ring-2 focus-visible:ring-emerald-500/10 font-bold text-zinc-900 min-h-[100px] p-6 transition-all"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-6 p-6 bg-zinc-50 rounded-[2.5rem] border border-zinc-100">
-              <div className="space-y-2 text-left">
+              <div className="col-span-4 space-y-2 text-left">
                 <div className="flex items-center gap-2 mb-1 ml-1">
-                  <Stethoscope className="w-3 h-3 text-emerald-600" />
-                  <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-400">Attending Physician</Label>
+                  <Stethoscope className="w-3 h-3 text-[#5C61F2]" />
+                  <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Doctor Name</Label>
                 </div>
                 <Select
                   value={formData.doctor}
                   onValueChange={(val) => setFormData({ ...formData, doctor: val })}
                 >
-                  <SelectTrigger className="bg-white border-none h-12 rounded-xl focus:ring-2 focus:ring-emerald-500/10 font-bold text-zinc-900 px-4 shadow-sm">
+                  <SelectTrigger className="!bg-white border border-zinc-100 h-12 rounded-xl focus:ring-2 focus:ring-[#5C61F2]/10 font-bold !text-zinc-800 [&>span]:!text-zinc-800 px-4 shadow-sm">
                     <SelectValue placeholder="Assign Doctor" />
                   </SelectTrigger>
-                  <SelectContent className="bg-white border-none shadow-2xl rounded-2xl p-2">
+                  <SelectContent className="bg-white border border-zinc-100 shadow-2xl rounded-2xl p-2">
                     {doctors.map((doc) => (
-                      <SelectItem key={doc.id} value={doc.id.toString()} className="rounded-xl font-bold">
+                      <SelectItem key={doc.id} value={doc.id.toString()} className="rounded-xl font-bold text-zinc-800 focus:bg-[#5C61F2]/10 focus:text-[#5C61F2]">
                         Dr. {doc.username}
                       </SelectItem>
                     ))}
@@ -303,21 +293,21 @@ export default function PatientDialog({
                 </Select>
               </div>
 
-              <div className="space-y-2 text-left">
+              <div className="col-span-4 space-y-2 text-left">
                 <div className="flex items-center gap-2 mb-1 ml-1">
-                  <Users className="w-3 h-3 text-emerald-600" />
-                  <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-400">Primary Nursing Staff</Label>
+                  <Users className="w-3 h-3 text-[#5C61F2]" />
+                  <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Nurse Name</Label>
                 </div>
                 <Select
                   value={formData.primary_nurse}
                   onValueChange={(val) => setFormData({ ...formData, primary_nurse: val })}
                 >
-                  <SelectTrigger className="bg-white border-none h-12 rounded-xl focus:ring-2 focus:ring-emerald-500/10 font-bold text-zinc-900 px-4 shadow-sm">
+                  <SelectTrigger className="!bg-white border border-zinc-100 h-12 rounded-xl focus:ring-2 focus:ring-[#5C61F2]/10 font-bold !text-zinc-800 [&>span]:!text-zinc-800 px-4 shadow-sm">
                     <SelectValue placeholder="Assign Nurse" />
                   </SelectTrigger>
-                  <SelectContent className="bg-white border-none shadow-2xl rounded-2xl p-2">
+                  <SelectContent className="bg-white border border-zinc-100 shadow-2xl rounded-2xl p-2">
                     {nurses.map((nurse) => (
-                      <SelectItem key={nurse.id} value={nurse.id.toString()} className="rounded-xl font-bold">
+                      <SelectItem key={nurse.id} value={nurse.id.toString()} className="rounded-xl font-bold text-zinc-800 focus:bg-[#5C61F2]/10 focus:text-[#5C61F2]">
                          {nurse.username}
                       </SelectItem>
                     ))}
@@ -326,39 +316,37 @@ export default function PatientDialog({
               </div>
             </div>
 
-            <div className="flex items-center justify-between p-6 bg-zinc-50/50 rounded-[2.5rem] border border-dashed border-zinc-200">
-              <div className="space-y-1 text-left">
-                <p className="text-[10px] font-black text-zinc-900 uppercase tracking-widest">Active Clinical State</p>
-                <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest opacity-60">Enable real-time physiological telemetry.</p>
-              </div>
-              <Switch
-                checked={formData.is_active}
-                onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
-                className="data-[state=checked]:bg-emerald-600 scale-110"
+            <div className="space-y-2 text-left">
+              <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-500 ml-1">Diagnosis & Notes</Label>
+              <Textarea
+                placeholder="Primary diagnosis and clinical notes..."
+                value={formData.diagnosis}
+                onChange={(e) => setFormData({ ...formData, diagnosis: e.target.value })}
+                className="!bg-white dark:!bg-white border border-zinc-100 rounded-2xl focus-visible:ring-2 focus-visible:ring-[#5C61F2]/10 font-bold !text-zinc-800 dark:!text-zinc-800 min-h-[120px] p-4 transition-all"
               />
             </div>
           </div>
 
-          <DialogFooter className="gap-3 pt-6 border-t border-zinc-100">
+          <DialogFooter className="gap-3 pt-6 border-t border-zinc-50">
             <Button
               type="button"
               variant="ghost"
               onClick={() => onOpenChange(false)}
-              className="h-14 px-8 rounded-2xl font-black text-[11px] uppercase tracking-widest text-zinc-400 hover:text-zinc-900 transition-all"
+              className="h-14 px-8 rounded-2xl font-black text-[11px] uppercase tracking-widest text-zinc-400 hover:text-zinc-800 transition-all"
             >
-              Discard
+              Cancel
             </Button>
             <Button
               type="submit"
               disabled={loading}
-              className="h-14 px-10 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xl shadow-emerald-600/20 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all active:scale-95 disabled:opacity-50"
+              className="h-14 px-10 bg-[#5C61F2] hover:bg-[#4A4ED4] text-white shadow-xl shadow-[#5C61F2]/20 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all active:scale-95 disabled:opacity-50"
             >
               {loading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : patient ? (
-                "Authorize Updates"
+                "Save Changes"
               ) : (
-                "Deploy Admission"
+                "Add Patient"
               )}
             </Button>
           </DialogFooter>

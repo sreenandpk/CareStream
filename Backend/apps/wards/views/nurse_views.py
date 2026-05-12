@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.utils import extend_schema
 
-from apps.core.role_permissions import IsNurse
+from apps.core.role_permissions import IsNurse, IsAdminOrSystemAdmin, IsDoctor
 from apps.wards.models import Ward
 from apps.wards.serializers.nurse_serializers import NurseWardSerializer
 
@@ -14,7 +14,7 @@ app_logger = logging.getLogger("app")
 
 
 class NurseWardListView(APIView):
-    permission_classes = [IsAuthenticated, IsNurse]
+    permission_classes = [IsAuthenticated]
 
     @extend_schema(
         tags=["Wards Nurse"],
@@ -25,13 +25,24 @@ class NurseWardListView(APIView):
 
         app_logger.info(f"Nurse ward list {user.username}")
 
-        wards = (
-            Ward.objects.filter(
-                nurses=user
+        if user.role == "ADMIN":
+            wards = (
+                Ward.objects.all()
+                .prefetch_related("rooms__beds__patient")
+                .distinct()
             )
-            .prefetch_related("rooms__beds__patient")
-            .distinct()
-        )
+        elif user.role == "DOCTOR":
+            wards = (
+                Ward.objects.filter(rooms__beds__patient__doctor=user)
+                .prefetch_related("rooms__beds__patient")
+                .distinct()
+            )
+        else:
+            wards = (
+                Ward.objects.filter(nurses=user)
+                .prefetch_related("rooms__beds__patient")
+                .distinct()
+            )
 
         from django.utils import timezone
         now = timezone.now()
@@ -53,7 +64,7 @@ class NurseWardListView(APIView):
 
 
 class NurseWardDetailView(APIView):
-    permission_classes = [IsAuthenticated, IsNurse]
+    permission_classes = [IsAuthenticated]
 
     @extend_schema(
         tags=["Wards Nurse"],
@@ -62,12 +73,23 @@ class NurseWardDetailView(APIView):
     def get(self, request, ward_id):
         user = request.user
 
-        ward = get_object_or_404(
-            Ward.objects.filter(
-                nurses=user
-            ).prefetch_related("rooms__beds__patient"),
-            id=ward_id
-        )
+        if user.role == "ADMIN":
+            ward = get_object_or_404(
+                Ward.objects.prefetch_related("rooms__beds__patient"),
+                id=ward_id
+            )
+        elif user.role == "DOCTOR":
+            ward = get_object_or_404(
+                Ward.objects.filter(rooms__beds__patient__doctor=user)
+                .prefetch_related("rooms__beds__patient"),
+                id=ward_id
+            )
+        else:
+            ward = get_object_or_404(
+                Ward.objects.filter(nurses=user)
+                .prefetch_related("rooms__beds__patient"),
+                id=ward_id
+            )
 
         serializer = NurseWardSerializer(ward)
 

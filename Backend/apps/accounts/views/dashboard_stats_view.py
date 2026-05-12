@@ -38,13 +38,25 @@ class DashboardStatsView(APIView):
             total_devices = Device.objects.count()
             active_simulators = Device.objects.filter(mode="SIMULATION", is_active=True).count()
             real_hardware = Device.objects.filter(mode="REAL", is_active=True).count()
-            
+
+            # --- Security Metrics (Audit Log Count) ---
+            from django.conf import settings
+            import os
+            audit_log_count = 0
+            try:
+                log_path = os.path.join(settings.BASE_DIR, 'logs', 'audit.log')
+                if os.path.exists(log_path):
+                    with open(log_path, 'r', encoding='utf-8', errors='ignore') as f:
+                        audit_log_count = sum(1 for line in f if line.strip())
+            except Exception:
+                audit_log_count = locked_accounts # Fallback
+
             return Response({
                 "success": True,
                 "data": {
                     "total_users": total_users,
                     "active_staff": active_staff,
-                    "security_alerts": locked_accounts,
+                    "security_alerts": audit_log_count,
                     "total_patients": total_patients,
                     "occupied_beds": occupied_beds,
                     "total_beds": total_beds,

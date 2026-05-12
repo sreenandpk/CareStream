@@ -134,7 +134,7 @@ export default function NurseAssignmentDialog({
                 Staff Deployment
               </DialogTitle>
               <p className="text-zinc-500 text-[11px] font-black uppercase tracking-widest mt-0.5">
-                Assign clinical staff to <span className="text-indigo-600">"{ward?.name}"</span>
+                Assign clinical staff to <span className="text-indigo-600"><span>&quot;</span>{ward?.name}<span>&quot;</span></span>
               </p>
             </div>
           </div>

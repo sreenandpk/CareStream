@@ -30,7 +30,8 @@ class LogFileView(APIView):
         
         try:
             with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-                lines = f.readlines()
+                # Read all lines and filter out whitespace-only ones
+                lines = [line.strip() for line in f.readlines() if line.strip()]
             
             # Show newest logs first
             lines.reverse()
@@ -39,7 +40,7 @@ class LogFileView(APIView):
             start = (page - 1) * page_size
             end = start + page_size
             
-            paginated_lines = [line.strip() for line in lines[start:end]]
+            paginated_lines = lines[start:end]
             
             return Response({
                 "filename": filename,

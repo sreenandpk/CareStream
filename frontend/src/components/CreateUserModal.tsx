@@ -167,9 +167,8 @@ export default function CreateUserModal({ isOpen, onClose, onSuccess }: CreateUs
                                     <SelectValue placeholder="Select role" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-white border-none shadow-2xl rounded-2xl p-2">
-                                    <SelectItem value="DOCTOR" className="rounded-xl font-bold">Medical Practitioner</SelectItem>
-                                    <SelectItem value="NURSE" className="rounded-xl font-bold">Nursing Specialist</SelectItem>
-                                    <SelectItem value="ADMIN" className="rounded-xl font-bold">System Administrator</SelectItem>
+                                    <SelectItem value="DOCTOR" className="rounded-xl font-bold">Doctor</SelectItem>
+                                    <SelectItem value="NURSE" className="rounded-xl font-bold">Nurse</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>

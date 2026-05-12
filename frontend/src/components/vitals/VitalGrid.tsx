@@ -74,7 +74,7 @@ export default function VitalGrid({ vitals, connected, filters, filteredVitals }
         ))}
       </div>
 
-      {/* 🕒 HISTORICAL REVIEW LAYER */}
+      {/* HISTORICAL REVIEW LAYER */}
       {reviewContext && (
         <HistoricalExplorer
             isOpen={!!reviewContext}
@@ -88,7 +88,7 @@ export default function VitalGrid({ vitals, connected, filters, filteredVitals }
       {filteredVitals.length === 0 && searchQuery && (
         <div className="flex flex-col items-center justify-center p-12 bg-zinc-950/30 rounded-3xl border border-zinc-900">
             <ShieldAlert className="w-10 h-10 text-zinc-800 mb-4" />
-            <p className="text-zinc-500 font-bold uppercase tracking-tight">No monitors matching "{searchQuery}"</p>
+            <p className="text-zinc-500 font-bold uppercase tracking-tight">No monitors matching <span>&quot;</span>{searchQuery}<span>&quot;</span></p>
         </div>
       )}
     </div>

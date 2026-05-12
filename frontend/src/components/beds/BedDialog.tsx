@@ -121,18 +121,18 @@ export default function BedDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] bg-white border-none text-zinc-900 shadow-2xl rounded-[2.5rem] p-0 overflow-hidden">
-        <DialogHeader className="p-8 pb-4 bg-emerald-50/50 border-b border-emerald-100">
+      <DialogContent className="sm:max-w-[500px] !bg-white border-none !text-zinc-800 shadow-2xl rounded-[2.5rem] p-0 overflow-hidden">
+        <DialogHeader className="p-8 pb-4 bg-[#5C61F2]/5 border-b border-[#5C61F2]/10">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-[#5C61F2]/10 flex items-center justify-center border border-[#5C61F2]/20">
               <Hotel className="w-6 h-6 text-[#5C61F2]" />
             </div>
             <div className="flex flex-col text-left">
-              <DialogTitle className="text-2xl font-black tracking-tight">
-                {bed ? "Edit Bed" : "Add New Bed"}
+              <DialogTitle className="text-2xl font-black tracking-tight uppercase">
+                {bed ? "Edit Bed Details" : "Add New Bed"}
               </DialogTitle>
               <p className="text-[#5C61F2] text-[11px] font-black uppercase tracking-widest mt-0.5">
-                Bed Details & Room Assignment
+                Bed Information & Room Assignment
               </p>
             </div>
           </div>
@@ -141,7 +141,7 @@ export default function BedDialog({
         <form onSubmit={handleSubmit} className="p-8 pt-6 space-y-8">
           <div className="space-y-6">
             <div className="space-y-2 text-left">
-              <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-400 ml-1">
+              <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-500 ml-1">
                 Select Room
               </Label>
               <Select
@@ -149,12 +149,12 @@ export default function BedDialog({
                 onValueChange={(val) => setFormData({ ...formData, room: val })}
                 required
               >
-                <SelectTrigger className="bg-zinc-50 border-none focus:ring-2 focus:ring-[#5C61F2]/10 h-14 rounded-2xl font-bold text-zinc-900 px-6 transition-all">
+                <SelectTrigger className="!bg-white border border-zinc-100 focus:ring-2 focus:ring-[#5C61F2]/10 h-14 rounded-2xl font-bold !text-zinc-800 [&>span]:!text-zinc-800 px-6 transition-all">
                   <SelectValue placeholder="Select Room" />
                 </SelectTrigger>
-                <SelectContent className="bg-white border-none shadow-2xl rounded-2xl p-2">
+                <SelectContent className="bg-white border border-zinc-100 shadow-2xl rounded-2xl p-2">
                   {rooms?.map((room) => (
-                    <SelectItem key={`room-opt-${room.id}`} value={room.id.toString()} className="rounded-xl font-bold text-zinc-700">
+                    <SelectItem key={`room-opt-${room.id}`} value={room.id.toString()} className="rounded-xl font-bold text-zinc-800 focus:bg-[#5C61F2]/10 focus:text-[#5C61F2]">
                       Room {room.room_number} {room.ward_name ? `(${room.ward_name})` : ""}
                     </SelectItem>
                   ))}
@@ -163,46 +163,46 @@ export default function BedDialog({
             </div>
 
             <div className="space-y-2 text-left">
-              <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-400 ml-1">
+              <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-500 ml-1">
                 Bed Number
               </Label>
               <Input
                 placeholder="e.g. B-102"
                 value={formData.bed_number}
                 onChange={(e) => setFormData({ ...formData, bed_number: e.target.value })}
-                className="bg-zinc-50 border-none focus-visible:ring-2 focus-visible:ring-[#5C61F2]/10 h-14 rounded-2xl font-black text-zinc-900 uppercase tracking-widest transition-all"
+                className="!bg-white border border-zinc-100 focus-visible:ring-2 focus-visible:ring-[#5C61F2]/10 h-14 rounded-2xl font-black !text-zinc-800 uppercase tracking-widest transition-all"
                 required
               />
             </div>
 
             <div className="space-y-2 text-left">
-              <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-400 ml-1">
-                Status
+              <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-500 ml-1">
+                Bed Status
               </Label>
               <Select
                 value={formData.status}
                 onValueChange={(val) => setFormData({ ...formData, status: val })}
               >
-                <SelectTrigger className="bg-zinc-50 border-none focus:ring-2 focus:ring-[#5C61F2]/10 h-14 rounded-2xl font-bold text-zinc-900 px-6 transition-all">
+                <SelectTrigger className="!bg-white border border-zinc-100 focus:ring-2 focus:ring-[#5C61F2]/10 h-14 rounded-2xl font-bold !text-zinc-800 [&>span]:!text-zinc-800 px-6 transition-all">
                   <SelectValue placeholder="Select Status" />
                 </SelectTrigger>
-                <SelectContent className="bg-white border-none shadow-2xl rounded-2xl p-2">
-                  <SelectItem value="AVAILABLE" className="rounded-xl font-black text-emerald-600">Available</SelectItem>
+                <SelectContent className="bg-white border border-zinc-100 shadow-2xl rounded-2xl p-2">
+                  <SelectItem value="AVAILABLE" className="rounded-xl font-black text-emerald-600 focus:bg-emerald-50">Available</SelectItem>
                   <SelectItem value="OCCUPIED" disabled className="rounded-xl font-black text-zinc-300">Occupied</SelectItem>
-                  <SelectItem value="MAINTENANCE" className="rounded-xl font-black text-amber-500">Maintenance</SelectItem>
+                  <SelectItem value="MAINTENANCE" className="rounded-xl font-black text-amber-500 focus:bg-amber-50">Maintenance</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="flex items-center justify-between p-6 bg-zinc-50/50 rounded-[2.5rem] border border-dashed border-zinc-200">
+            <div className="flex items-center justify-between p-6 bg-[#F8F9FB] rounded-[2.5rem] border border-zinc-100">
               <div className="space-y-1 text-left">
-                <p className="text-[10px] font-black text-zinc-900 uppercase tracking-widest">Active Status</p>
-                <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest opacity-60">Show bed in monitoring dashboard.</p>
+                <p className="text-[10px] font-black !text-zinc-800 uppercase tracking-widest">Enable Bed</p>
+                <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest opacity-60">Display this bed in the monitoring dashboard.</p>
               </div>
               <Switch
                 checked={formData.is_active}
                 onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
-                className="data-[state=checked]:bg-[#5C61F2] scale-110"
+                className="data-[state=checked]:bg-[#5C61F2] data-[state=unchecked]:bg-zinc-200 scale-110 [&>span]:!bg-white dark:[&>span]:!bg-white border-none shadow-inner"
               />
             </div>
           </div>
@@ -212,9 +212,9 @@ export default function BedDialog({
               type="button"
               variant="ghost"
               onClick={() => onOpenChange(false)}
-              className="h-14 px-8 rounded-2xl font-black text-[11px] uppercase tracking-widest text-zinc-400 hover:text-zinc-900 transition-all"
+              className="h-14 px-8 rounded-2xl font-black text-[11px] uppercase tracking-widest text-zinc-400 hover:text-zinc-800 transition-all"
             >
-              Discard
+              Cancel
             </Button>
             <Button
               type="submit"
@@ -226,7 +226,7 @@ export default function BedDialog({
               ) : bed ? (
                 "Save Changes"
               ) : (
-                "Create Bed"
+                "Add Bed"
               )}
             </Button>
           </DialogFooter>
