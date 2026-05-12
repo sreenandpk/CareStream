@@ -7,7 +7,7 @@ services:
     environment:
       - POSTGRES_DB=carestream_db
       - POSTGRES_USER=carestream_user
-      - POSTGRES_PASSWORD=david@9539379577
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-carestream_pass}
     ports:
       - "5433:5432"
 
