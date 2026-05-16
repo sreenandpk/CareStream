@@ -59,7 +59,7 @@ export default function DocsPage() {
                         <TechBadge label="AWS S3" category="Storage" />
                         <TechBadge label="AWS ECR" category="Registry" />
                         <TechBadge label="AWS ElastiCache" category="Real-time" />
-                        <TechBadge label="AWS EC2" category="Compute" />
+                        <TechBadge label="AWS ECS" category="Compute" />
                         <TechBadge label="Vercel" category="Hosting" />
                         <TechBadge label="DuckDNS" category="Gateway" />
                     </div>
@@ -86,7 +86,7 @@ export default function DocsPage() {
                                     <strong>AWS ECR:</strong> Our private container registry for storing production-ready Docker images, ensuring secure and fast deployments to the ECS cluster.
                                 </p>
                                 <p>
-                                    <strong>AWS EC2 / ECS:</strong> Provides a scalable, high-performance environment for our Django Engine, handling both API traffic and secure WebSocket tunnels.
+                                    <strong>AWS ECS (Fargate):</strong> Provides a scalable, high-performance container environment for our Django Engine, handling both API traffic and secure WebSocket tunnels.
                                 </p>
                                 <p>
                                     <strong>Vercel Edge:</strong> Delivers our Next.js frontend globally with minimal latency, ensuring the dashboard is always responsive for medical staff.
