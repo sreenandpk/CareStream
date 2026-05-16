@@ -44,155 +44,176 @@ export default function DocsPage() {
             <div className="container mx-auto px-6 max-w-6xl pb-32">
 
                 {/* 🛠️ TECHNOLOGY STACK */}
-                <DocsSection id="tech" title="Built With" icon={Layers}>
+                <DocsSection id="tech" title="The Engineering Stack" icon={Layers}>
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                        <TechBadge label="Next.js" category="Frontend" />
-                        <TechBadge label="React" category="UI Library" />
-                        <TechBadge label="Tailwind" category="Styling" />
-                        <TechBadge label="Django" category="Backend" />
-                        <TechBadge label="PostgreSQL" category="Database" />
-                        <TechBadge label="Redis/Celery" category="Tasks" />
+                        <TechBadge label="Next.js 16" category="Frontend" />
+                        <TechBadge label="React 19" category="UI Library" />
+                        <TechBadge label="Tailwind 4" category="Styling" />
+                        <TechBadge label="Django REST" category="Backend" />
+                        <TechBadge label="PostgreSQL 16" category="Database" />
+                        <TechBadge label="Redis 7" category="Real-time" />
+                        <TechBadge label="Celery" category="Task Queue" />
+                        <TechBadge label="WebSockets" category="Streaming" />
                         <TechBadge label="Scikit-Learn" category="AI Engine" />
-                        <TechBadge label="WebSockets" category="Real-time" />
+                        <TechBadge label="AWS ECS" category="Deployment" />
+                        <TechBadge label="Vercel" category="Hosting" />
+                        <TechBadge label="DuckDNS" category="Gateway" />
                     </div>
                 </DocsSection>
 
-                {/* 🚀 CORE CAPABILITIES */}
-                <DocsSection id="capabilities" title="What it Can Do" icon={Zap}>
+                {/* 🛡️ IDENTITY SHIELD */}
+                <DocsSection id="identity" title="Identity Shield & Security" icon={Shield}>
+                    <div className="grid md:grid-cols-2 gap-8">
+                        <div className="p-10 bg-white rounded-3xl border border-zinc-100 shadow-sm">
+                            <h4 className="text-2xl font-bold mb-6 flex items-center gap-3">
+                                <Fingerprint className="text-blue-600" />
+                                Smart Account Guard
+                            </h4>
+                            <p className="text-zinc-600 mb-6 leading-relaxed">
+                                When a user is created, our <strong>Identity Shield</strong> task runs in the background. It checks 
+                                for email delivery signals. If an email is fake, the account is automatically locked.
+                            </p>
+                            <div className="flex gap-2">
+                                <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-bold uppercase tracking-wider">Asynchronous Validation</span>
+                            </div>
+                        </div>
+                        <div className="p-10 bg-white rounded-3xl border border-zinc-100 shadow-sm">
+                            <h4 className="text-2xl font-bold mb-6 flex items-center gap-3">
+                                <Lock className="text-blue-600" />
+                                Lockdown Protocol
+                            </h4>
+                            <ul className="space-y-4 text-zinc-600 text-sm">
+                                <li className="flex items-center gap-3">
+                                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
+                                    Mandatory 6-digit Email OTP for login
+                                </li>
+                                <li className="flex items-center gap-3">
+                                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
+                                    Strict Role-Based Access (Admin/Doctor/Nurse)
+                                </li>
+                                <li className="flex items-center gap-3">
+                                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
+                                    JWT-based stateless session management
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </DocsSection>
+
+                {/* 📡 CLINICAL NEXUS */}
+                <DocsSection id="clinical" title="Clinical Monitoring Nexus" icon={Activity}>
                     <div className="grid md:grid-cols-3 gap-8">
-                        <DocsCard
-                            title="Live Monitoring"
-                            description="Shows heart rate and oxygen levels in real-time using simulated patient data."
-                            icon={Activity}
-                            delay={0.1}
-                        />
-                        <DocsCard
-                            title="Smart Alerts"
-                            description="Uses AI to automatically spot unusual health patterns and warn doctors immediately."
-                            icon={Shield}
-                            delay={0.2}
-                        />
-                        <DocsCard
-                            title="Hospital Map"
-                            description="Organizes patients into Wards, Rooms, and Beds for easy hospital management."
-                            icon={Workflow}
-                            delay={0.3}
-                        />
+                        <div className="p-8 bg-zinc-50 rounded-[2.5rem] border border-zinc-100">
+                            <h4 className="text-xl font-bold mb-4">Hardware Edge</h4>
+                            <p className="text-zinc-500 text-sm leading-relaxed">
+                                Native support for <strong>ESP32</strong> devices to send real patient vitals over secure 
+                                data tunnels.
+                            </p>
+                        </div>
+                        <div className="p-8 bg-zinc-50 rounded-[2.5rem] border border-zinc-100">
+                            <h4 className="text-xl font-bold mb-4">Live Waveforms</h4>
+                            <p className="text-zinc-500 text-sm leading-relaxed">
+                                High-fidelity real-time streaming of Heart Rate and SpO2 using secure WebSockets.
+                            </p>
+                        </div>
+                        <div className="p-8 bg-zinc-50 rounded-[2.5rem] border border-zinc-100">
+                            <h4 className="text-xl font-bold mb-4">Dual Mode</h4>
+                            <p className="text-zinc-500 text-sm leading-relaxed">
+                                Seamlessly switch between <strong>Simulation Mode</strong> and <strong>Real Device Mode</strong>.
+                            </p>
+                        </div>
+                    </div>
+                </DocsSection>
+
+                {/* 🤖 AI & FORENSICS */}
+                <DocsSection id="forensics" title="AI Forensics & Playback" icon={HeartPulse}>
+                    <div className="relative p-12 bg-zinc-950 rounded-[3rem] overflow-hidden border border-zinc-800 text-white shadow-2xl">
+                        <div className="absolute inset-0 bg-linear-to-b from-blue-500/10 to-transparent opacity-50" />
+                        <div className="relative z-10 grid md:grid-cols-2 gap-12">
+                            <div>
+                                <h4 className="text-2xl font-bold mb-6">Review Replay</h4>
+                                <p className="text-zinc-400 leading-relaxed mb-8">
+                                    Doctors can access full forensic playback of patient telemetry sessions. Watch 
+                                    historical vitals as they happened in real-time for deeper medical review.
+                                </p>
+                                <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/10 text-blue-400 rounded-full text-xs font-bold border border-blue-500/20">
+                                    Pattern Detection Enabled
+                                </div>
+                            </div>
+                            <div>
+                                <h4 className="text-2xl font-bold mb-6">AI Pattern Intelligence</h4>
+                                <p className="text-zinc-400 leading-relaxed mb-8">
+                                    Uses <strong>Isolation Forest</strong> (Scikit-Learn) to automatically flag unusual health 
+                                    events that medical staff might miss during busy shifts.
+                                </p>
+                                <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500/10 text-emerald-400 rounded-full text-xs font-bold border border-emerald-500/20">
+                                    99% Detection Sensitivity
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </DocsSection>
 
                 {/* 🏗️ ARCHITECTURE */}
-                <DocsSection id="architecture" title="Project Layout" icon={Workflow}>
+                <DocsSection id="architecture" title="Project Layout & Cloud" icon={Workflow}>
                     <div className="space-y-8">
                         <div className="relative p-12 bg-blue-50/40 rounded-[3rem] overflow-hidden border border-blue-100/50 shadow-sm">
                             <div className="grid md:grid-cols-3 gap-12 relative z-10">
                                 <div className="flex flex-col items-center text-center">
                                     <div className="p-5 bg-white rounded-[2rem] text-blue-600 mb-6 border border-blue-100 shadow-sm">
-                                        <Activity size={40} />
+                                        <Cloud size={40} />
                                     </div>
-                                    <h4 className="text-zinc-900 font-bold text-lg mb-2">Simulation</h4>
-                                    <p className="text-zinc-500 text-sm leading-relaxed">Generates fake but realistic health data for testing.</p>
+                                    <h4 className="text-zinc-900 font-bold text-lg mb-2">Vercel (UI)</h4>
+                                    <p className="text-zinc-500 text-sm leading-relaxed">Global frontend hosting with Edge logic.</p>
                                 </div>
                                 <div className="flex flex-col items-center text-center">
                                     <div className="p-5 bg-white rounded-[2rem] text-blue-600 mb-6 border border-blue-100 shadow-sm">
                                         <Cpu size={40} />
                                     </div>
-                                    <h4 className="text-zinc-900 font-bold text-lg mb-2">AI Engine</h4>
-                                    <p className="text-zinc-500 text-sm leading-relaxed">Analyzes data to find patterns and hidden risks.</p>
+                                    <h4 className="text-zinc-900 font-bold text-lg mb-2">AWS ECS (Engine)</h4>
+                                    <p className="text-zinc-500 text-sm leading-relaxed">Dockerized backend running on the cloud.</p>
                                 </div>
                                 <div className="flex flex-col items-center text-center">
                                     <div className="p-5 bg-white rounded-[2rem] text-blue-600 mb-6 border border-blue-100 shadow-sm">
-                                        <Database size={40} />
+                                        <Shield size={40} />
                                     </div>
-                                    <h4 className="text-zinc-900 font-bold text-lg mb-2">Data Storage</h4>
-                                    <p className="text-zinc-500 text-sm leading-relaxed">Keeps all patient records and history safe.</p>
+                                    <h4 className="text-zinc-900 font-bold text-lg mb-2">DuckDNS + SSL</h4>
+                                    <p className="text-zinc-500 text-sm leading-relaxed">Secure gateway with automatic SSL padlocks.</p>
                                 </div>
                             </div>
                             <div className="absolute top-1/2 left-0 w-full h-[1px] bg-linear-to-r from-transparent via-blue-200 to-transparent -translate-y-1/2 hidden md:block" />
                         </div>
 
-                        <div className="grid md:grid-cols-2 gap-8">
-                            <div className="p-8 bg-zinc-50 rounded-[2.5rem] border border-zinc-100">
-                                <h4 className="text-xl font-bold mb-4 flex items-center gap-2">
-                                    <Zap className="text-blue-600" size={20} />
-                                    Fast Notifications
-                                </h4>
-                                <p className="text-zinc-600 text-sm leading-relaxed">
-                                    Uses "WebSockets" to send health updates to the screen without needing to refresh.
-                                </p>
+                        <div className="p-10 bg-zinc-50 rounded-[2.5rem] border border-zinc-100">
+                            <h4 className="text-xl font-bold mb-4 flex items-center gap-2">
+                                <Terminal className="text-blue-600" size={20} />
+                                Production Pipeline
+                            </h4>
+                            <div className="grid md:grid-cols-2 gap-8 text-sm text-zinc-500 leading-relaxed">
+                                <p><strong>Frontend:</strong> Hosted at <code className="bg-white px-2 py-1 rounded">care-stream.vercel.app</code></p>
+                                <p><strong>Backend API:</strong> Hosted at <code className="bg-white px-2 py-1 rounded">carestream-cloud.duckdns.org</code></p>
                             </div>
-                            <div className="p-8 bg-zinc-50 rounded-[2.5rem] border border-zinc-100">
-                                <h4 className="text-xl font-bold mb-4 flex items-center gap-2">
-                                    <Terminal className="text-blue-600" size={20} />
-                                    Task Workers
-                                    <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 text-[9px] rounded-full">Redis + Celery</span>
-                                </h4>
-                                <p className="text-zinc-600 text-sm leading-relaxed">
-                                    Handles heavy data calculations in the background to keep the website smooth.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </DocsSection>
-
-                {/* 🛡️ SECURITY */}
-                <DocsSection id="security" title="How We Keep it Safe" icon={Lock}>
-                    <div className="grid md:grid-cols-2 gap-8">
-                        <div className="p-10 bg-white rounded-3xl border border-zinc-100 shadow-sm hover:shadow-xl transition-all group">
-                            <Shield className="text-blue-600 mb-8 group-hover:scale-110 transition-transform" size={40} />
-                            <h4 className="text-2xl font-bold mb-6">User Safety</h4>
-                            <ul className="space-y-5 text-zinc-600">
-                                <li className="flex items-center gap-4">
-                                    <div className="w-2 h-2 bg-blue-500 rounded-full" />
-                                    Secure login with unique user accounts
-                                </li>
-                                <li className="flex items-center gap-4">
-                                    <div className="w-2 h-2 bg-blue-500 rounded-full" />
-                                    Code verification for every login attempt
-                                </li>
-                                <li className="flex items-center gap-4">
-                                    <div className="w-2 h-2 bg-blue-500 rounded-full" />
-                                    Different permissions for Doctors and Nurses
-                                </li>
-                            </ul>
-                        </div>
-                        <div className="p-10 bg-white rounded-3xl border border-zinc-100 shadow-sm hover:shadow-xl transition-all group">
-                            <Terminal className="text-blue-600 mb-8 group-hover:scale-110 transition-transform" size={40} />
-                            <h4 className="text-2xl font-bold mb-6">System Logs</h4>
-                            <ul className="space-y-5 text-zinc-600">
-                                <li className="flex items-center gap-4">
-                                    <div className="w-2 h-2 bg-blue-500 rounded-full" />
-                                    We keep a list of all important actions taken
-                                </li>
-                                <li className="flex items-center gap-4">
-                                    <div className="w-2 h-2 bg-blue-500 rounded-full" />
-                                    Safety checks to prevent hacking attempts
-                                </li>
-                                <li className="flex items-center gap-3">
-                                    <div className="w-2 h-2 bg-blue-500 rounded-full" />
-                                    Automatic data backups and protection
-                                </li>
-                            </ul>
                         </div>
                     </div>
                 </DocsSection>
 
                 {/* 📥 TECHNICAL NARRATIVE */}
                 <div className="mt-24 p-12 bg-zinc-900 rounded-[3rem] text-center">
-                    <h3 className="text-3xl font-bold text-white mb-6">Project Guide</h3>
+                    <h3 className="text-3xl font-bold text-white mb-6">Complete Project Guide</h3>
                     <p className="text-zinc-400 mb-10 max-w-2xl mx-auto leading-relaxed">
-                        Read the full guide to see how to set up the project on your own computer and how the code works.
+                        Read the full technical guide to see the code architecture, ward management logic, and cloud setup details.
                     </p>
                     <a
                         href="https://github.com/sreenandpk/CareStream"
                         target="_blank"
                         className="inline-flex items-center gap-2 px-8 h-14 bg-white text-zinc-900 rounded-full font-black text-xs uppercase tracking-widest hover:bg-zinc-100 transition-all"
                     >
-                        View Full Code
+                        Explore Repository
                     </a>
                 </div>
 
             </div>
+        </div>
         </div>
     );
 }
