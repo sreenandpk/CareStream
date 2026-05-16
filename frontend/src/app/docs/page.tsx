@@ -13,7 +13,8 @@ import {
     Fingerprint,
     Workflow,
     Zap,
-    HeartPulse
+    HeartPulse,
+    ArrowRight
 } from "lucide-react";
 import { DocsHero, TechBadge } from "@/components/docs/DocsHero";
 import { DocsSection, DocsCard } from "@/components/docs/DocsComponents";
