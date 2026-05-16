@@ -193,14 +193,20 @@
     background-color: #5C67F2;
   }
 
-  /* ⚡ Modern Loading Pulse */
-  @keyframes modern-pulse {
-    0% { transform: scale(0.98); opacity: 0.5; }
-    50% { transform: scale(1.02); opacity: 0.8; }
-    100% { transform: scale(0.98); opacity: 0.5; }
+  /* 🩺 Clinical Documentation Utilities */
+  .glass-card {
+    @apply bg-white/70 backdrop-blur-xl border border-white/20 shadow-lg;
   }
 
-  .animate-modern-pulse {
-    animation: modern-pulse 2s infinite ease-in-out;
+  .text-gradient-blue {
+    @apply bg-linear-to-br from-blue-600 to-blue-400 bg-clip-text text-transparent;
+  }
+
+  .clinical-border {
+    @apply border border-zinc-100 hover:border-blue-100 transition-colors duration-300;
+  }
+
+  .reveal-on-scroll {
+    @apply transition-all duration-1000 ease-out;
   }
 }

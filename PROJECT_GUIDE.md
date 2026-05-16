@@ -79,6 +79,36 @@ CareStream follows a **decoupled architecture**:
 *   **Audit Trails**: Every administrative action is logged to dedicated audit files.
 *   **Identity Integrity**: Users are born in a "Pending" state and must clear the Deliverability Signal before being marked as "Valid".
 
+## 🌐 Production Deployment (The Cloud Nexus)
+
+CareStream is deployed using a synchronized "Cloud Nexus" architecture for maximum security and scalability.
+
+### **1. Infrastructure Map**
+*   **Frontend**: Hosted on **Vercel** (`https://care-stream.vercel.app`)
+*   **Backend**: Hosted on **AWS ECS** (Elastic Container Service)
+*   **Public Gateway**: **DuckDNS** (`https://carestream-cloud.duckdns.org`)
+*   **Certificate Authority**: **Let's Encrypt** (Automated via Certbot in `start.sh`)
+
+### **2. Production Security Hardening**
+*   **SSL Handshaking**: The system uses a non-destructive Certbot loop that detects "Dummy" vs "Real" certificates, ensuring the padlock 🔒 is always green.
+*   **CORS Policy**: Configured to trust specific Vercel origins while permitting cross-domain production cookies.
+*   **Protocol Enforcement**: Production environments force `wss://` (Secure WebSockets) for all clinical telemetry to prevent mixed-content blocking.
+*   **Root Gateway**: The application root (`/`) is locked and automatically redirects to the System Authentication Nexus.
+
+### **3. Scaling to Production**
+
+To deploy a new instance of the CareStream Nexus:
+1.  **Backend (AWS ECR)**:
+    ```bash
+    docker build -t carestream-backend:latest .
+    docker tag carestream-backend:latest <AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/carestream-backend:latest
+    docker push <AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/carestream-backend:latest
+    ```
+2.  **Frontend (Vercel)**:
+    Set the following Environment Variables:
+    *   `NEXT_PUBLIC_API_URL`: `https://carestream-cloud.duckdns.org/api/`
+    *   `NEXT_PUBLIC_WS_URL`: `wss://carestream-cloud.duckdns.org/ws`
+
 ---
 
 ## 📥 Installation & Setup
