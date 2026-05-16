@@ -113,6 +113,16 @@ CORS_ALLOW_HEADERS = [
 ]
 
 # =====================
+# PRODUCTION COOKIE SYNC (Vercel <-> DuckDNS)
+# =====================
+SESSION_COOKIE_SAMESITE = 'None'
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SAMESITE = 'None'
+CSRF_COOKIE_SECURE = True
+CSRF_COOKIE_HTTPONLY = False  # Allow frontend to read CSRF token if needed
+SESSION_COOKIE_HTTPONLY = True
+
+# =====================
 # URLS
 # =====================
 
