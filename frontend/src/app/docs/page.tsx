@@ -31,9 +31,9 @@ export default function DocsPage() {
                     </div>
                     <div className="flex items-center gap-6 text-sm font-medium text-zinc-500">
                         <a href="#tech" className="hover:text-blue-600 transition-colors">Tools</a>
-                        <a href="#capabilities" className="hover:text-blue-600 transition-colors">Features</a>
+                        <a href="#clinical" className="hover:text-blue-600 transition-colors">Features</a>
                         <a href="#architecture" className="hover:text-blue-600 transition-colors">Layout</a>
-                        <a href="#security" className="hover:text-blue-600 transition-colors">Safety</a>
+                        <a href="#identity" className="hover:text-blue-600 transition-colors">Safety</a>
                     </div>
                 </div>
             </nav>
