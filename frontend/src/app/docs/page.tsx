@@ -51,7 +51,9 @@ export default function DocsPage() {
                         <TechBadge label="Tailwind" category="Styling" />
                         <TechBadge label="Django" category="Backend" />
                         <TechBadge label="PostgreSQL" category="Database" />
-                        <TechBadge label="Redis" category="Real-time" />
+                        <TechBadge label="Redis/Celery" category="Tasks" />
+                        <TechBadge label="Scikit-Learn" category="AI Engine" />
+                        <TechBadge label="WebSockets" category="Real-time" />
                     </div>
                 </DocsSection>
 
@@ -59,21 +61,21 @@ export default function DocsPage() {
                 <DocsSection id="capabilities" title="What it Can Do" icon={Zap}>
                     <div className="grid md:grid-cols-3 gap-8">
                         <DocsCard
-                            title="Easy Login"
-                            description="Users can login safely with an email code (OTP) sent directly to their inbox."
-                            icon={Fingerprint}
+                            title="Live Monitoring"
+                            description="Shows heart rate and oxygen levels in real-time using simulated patient data."
+                            icon={Activity}
                             delay={0.1}
                         />
                         <DocsCard
-                            title="Live Monitoring"
-                            description="Shows patient health data like heart rate in real-time as it happens."
-                            icon={Activity}
+                            title="Smart Alerts"
+                            description="Uses AI to automatically spot unusual health patterns and warn doctors immediately."
+                            icon={Shield}
                             delay={0.2}
                         />
                         <DocsCard
-                            title="History Playback"
-                            description="Doctors can look back at old patient data to see what happened earlier."
-                            icon={HeartPulse}
+                            title="Hospital Map"
+                            description="Organizes patients into Wards, Rooms, and Beds for easy hospital management."
+                            icon={Workflow}
                             delay={0.3}
                         />
                     </div>
@@ -86,24 +88,24 @@ export default function DocsPage() {
                             <div className="grid md:grid-cols-3 gap-12 relative z-10">
                                 <div className="flex flex-col items-center text-center">
                                     <div className="p-5 bg-white rounded-[2rem] text-blue-600 mb-6 border border-blue-100 shadow-sm">
-                                        <Cloud size={40} />
+                                        <Activity size={40} />
                                     </div>
-                                    <h4 className="text-zinc-900 font-bold text-lg mb-2">Frontend</h4>
-                                    <p className="text-zinc-500 text-sm leading-relaxed">The website you see and use every day.</p>
+                                    <h4 className="text-zinc-900 font-bold text-lg mb-2">Simulation</h4>
+                                    <p className="text-zinc-500 text-sm leading-relaxed">Generates fake but realistic health data for testing.</p>
                                 </div>
                                 <div className="flex flex-col items-center text-center">
                                     <div className="p-5 bg-white rounded-[2rem] text-blue-600 mb-6 border border-blue-100 shadow-sm">
                                         <Cpu size={40} />
                                     </div>
-                                    <h4 className="text-zinc-900 font-bold text-lg mb-2">Server</h4>
-                                    <p className="text-zinc-500 text-sm leading-relaxed">The brain of the project that handles data.</p>
+                                    <h4 className="text-zinc-900 font-bold text-lg mb-2">AI Engine</h4>
+                                    <p className="text-zinc-500 text-sm leading-relaxed">Analyzes data to find patterns and hidden risks.</p>
                                 </div>
                                 <div className="flex flex-col items-center text-center">
                                     <div className="p-5 bg-white rounded-[2rem] text-blue-600 mb-6 border border-blue-100 shadow-sm">
                                         <Database size={40} />
                                     </div>
-                                    <h4 className="text-zinc-900 font-bold text-lg mb-2">Database</h4>
-                                    <p className="text-zinc-500 text-sm leading-relaxed">Where we store patient and user info safely.</p>
+                                    <h4 className="text-zinc-900 font-bold text-lg mb-2">Data Storage</h4>
+                                    <p className="text-zinc-500 text-sm leading-relaxed">Keeps all patient records and history safe.</p>
                                 </div>
                             </div>
                             <div className="absolute top-1/2 left-0 w-full h-[1px] bg-linear-to-r from-transparent via-blue-200 to-transparent -translate-y-1/2 hidden md:block" />
@@ -113,19 +115,20 @@ export default function DocsPage() {
                             <div className="p-8 bg-zinc-50 rounded-[2.5rem] border border-zinc-100">
                                 <h4 className="text-xl font-bold mb-4 flex items-center gap-2">
                                     <Zap className="text-blue-600" size={20} />
-                                    Background Tasks
+                                    Fast Notifications
                                 </h4>
                                 <p className="text-zinc-600 text-sm leading-relaxed">
-                                    Handles things in the background so the website stays fast and responsive.
+                                    Uses "WebSockets" to send health updates to the screen without needing to refresh.
                                 </p>
                             </div>
                             <div className="p-8 bg-zinc-50 rounded-[2.5rem] border border-zinc-100">
                                 <h4 className="text-xl font-bold mb-4 flex items-center gap-2">
-                                    <Activity className="text-blue-600" size={20} />
-                                    Live Data Flow
+                                    <Terminal className="text-blue-600" size={20} />
+                                    Task Workers
+                                    <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 text-[9px] rounded-full">Redis + Celery</span>
                                 </h4>
                                 <p className="text-zinc-600 text-sm leading-relaxed">
-                                    Sends health data directly from sensors to the dashboard without delays.
+                                    Handles heavy data calculations in the background to keep the website smooth.
                                 </p>
                             </div>
                         </div>
