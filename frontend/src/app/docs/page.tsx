@@ -55,37 +55,41 @@ export default function DocsPage() {
                         <TechBadge label="Celery" category="Task Queue" />
                         <TechBadge label="WebSockets" category="Streaming" />
                         <TechBadge label="Scikit-Learn" category="AI Engine" />
-                        <TechBadge label="AWS ECS" category="Deployment" />
+                        <TechBadge label="AWS RDS" category="Database" />
+                        <TechBadge label="AWS S3" category="Storage" />
+                        <TechBadge label="AWS ECR" category="Registry" />
+                        <TechBadge label="AWS ElastiCache" category="Real-time" />
+                        <TechBadge label="AWS EC2" category="Compute" />
                         <TechBadge label="Vercel" category="Hosting" />
                         <TechBadge label="DuckDNS" category="Gateway" />
                     </div>
 
                     <div className="grid md:grid-cols-2 gap-8">
                         <div className="p-8 bg-zinc-50 rounded-3xl border border-zinc-100">
-                            <h4 className="text-lg font-bold mb-4">Why this Stack?</h4>
+                            <h4 className="text-lg font-bold mb-4">Cloud Infrastructure (AWS)</h4>
                             <div className="space-y-4 text-sm text-zinc-600 leading-relaxed">
                                 <p>
-                                    <strong>Next.js & React 19:</strong> Chosen for "Edge Rendering" and fast UI performance. In a hospital, every second counts.
+                                    <strong>AWS RDS (Postgres):</strong> We use managed RDS for our medical records to ensure automatic backups, high availability, and data encryption at rest.
                                 </p>
                                 <p>
-                                    <strong>Django ASGI:</strong> Provides a "Rock-Solid" backend that can handle both regular API requests and live "WebSocket" streams at the same time.
+                                    <strong>AWS S3:</strong> Secure storage for clinical documents, medical images, and project assets, ensuring they are always available and protected.
                                 </p>
                                 <p>
-                                    <strong>Redis + Celery:</strong> This "Asynchronous Engine" handles heavy tasks (like health alerts) in the background so the website never slows down.
+                                    <strong>AWS ElastiCache (Redis):</strong> Powers our live telemetry signaling with sub-millisecond latency, essential for real-time crisis monitoring.
                                 </p>
                             </div>
                         </div>
                         <div className="p-8 bg-zinc-50 rounded-3xl border border-zinc-100">
-                            <h4 className="text-lg font-bold mb-4">Design Strategy</h4>
+                            <h4 className="text-lg font-bold mb-4">Deployment Strategy</h4>
                             <div className="space-y-4 text-sm text-zinc-600 leading-relaxed">
                                 <p>
-                                    <strong>Stateless Security:</strong> We use JWT tokens and OTP verification to ensure that only the right medical staff can see patient data.
+                                    <strong>AWS ECR:</strong> Our private container registry for storing production-ready Docker images, ensuring secure and fast deployments to the ECS cluster.
                                 </p>
                                 <p>
-                                    <strong>Data Isolation:</strong> PostgreSQL stores the history, while Redis handles the "Live" data, ensuring the system is both fast and reliable.
+                                    <strong>AWS EC2 / ECS:</strong> Provides a scalable, high-performance environment for our Django Engine, handling both API traffic and secure WebSocket tunnels.
                                 </p>
                                 <p>
-                                    <strong>AI Forensics:</strong> We use Scikit-Learn not just for show, but to find "Hidden Anomaly Patterns" in patient health over time.
+                                    <strong>Vercel Edge:</strong> Delivers our Next.js frontend globally with minimal latency, ensuring the dashboard is always responsive for medical staff.
                                 </p>
                             </div>
                         </div>
