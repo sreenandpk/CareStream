@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Loader2, ShieldCheck, Lock, Mail, ArrowRight, UserCircle, Clock, AlertTriangle, Shield, Layers } from "lucide-react";
+import { Loader2, ShieldCheck, Lock, Mail, ArrowRight, UserCircle, Clock, AlertTriangle, Shield, Layers, BookOpen } from "lucide-react";
 
 export default function LoginPage() {
     const [credentials, setCredentials] = useState({ username: "", password: "" });
@@ -321,13 +321,15 @@ export default function LoginPage() {
                     </CardContent>
                 </Card>
 
-                <div className="mt-8 flex justify-center">
+                <div className="mt-12 flex justify-center">
                     <button 
                         onClick={() => router.push("/docs")}
-                        className="flex items-center gap-2 px-6 py-3 bg-white border border-zinc-200 rounded-full text-[11px] font-black uppercase tracking-[0.2em] text-zinc-400 hover:text-[#5C61F2] hover:border-[#5C61F2]/30 hover:bg-[#5C61F2]/5 transition-all shadow-sm"
+                        className="group flex items-center gap-3 px-8 py-3.5 bg-white/50 backdrop-blur-md border border-zinc-200 rounded-full text-[12px] font-bold text-zinc-500 hover:text-[#5C61F2] hover:border-[#5C61F2]/40 hover:bg-white transition-all shadow-sm hover:shadow-xl hover:shadow-[#5C61F2]/10"
                     >
-                        <Layers className="w-3.5 h-3.5" />
-                        System Documentation
+                        <div className="p-1.5 bg-zinc-100 rounded-lg group-hover:bg-[#5C61F2]/10 transition-colors">
+                            <BookOpen className="w-4 h-4 text-zinc-400 group-hover:text-[#5C61F2]" />
+                        </div>
+                        Project Guide
                     </button>
                 </div>
             </div>
