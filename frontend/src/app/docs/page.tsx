@@ -45,7 +45,7 @@ export default function DocsPage() {
 
                 {/* 🛠️ TECHNOLOGY STACK */}
                 <DocsSection id="tech" title="The Engineering Stack" icon={Layers}>
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-12">
                         <TechBadge label="Next.js 16" category="Frontend" />
                         <TechBadge label="React 19" category="UI Library" />
                         <TechBadge label="Tailwind 4" category="Styling" />
@@ -58,6 +58,37 @@ export default function DocsPage() {
                         <TechBadge label="AWS ECS" category="Deployment" />
                         <TechBadge label="Vercel" category="Hosting" />
                         <TechBadge label="DuckDNS" category="Gateway" />
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-8">
+                        <div className="p-8 bg-zinc-50 rounded-3xl border border-zinc-100">
+                            <h4 className="text-lg font-bold mb-4">Why this Stack?</h4>
+                            <div className="space-y-4 text-sm text-zinc-600 leading-relaxed">
+                                <p>
+                                    <strong>Next.js & React 19:</strong> Chosen for "Edge Rendering" and fast UI performance. In a hospital, every second counts.
+                                </p>
+                                <p>
+                                    <strong>Django ASGI:</strong> Provides a "Rock-Solid" backend that can handle both regular API requests and live "WebSocket" streams at the same time.
+                                </p>
+                                <p>
+                                    <strong>Redis + Celery:</strong> This "Asynchronous Engine" handles heavy tasks (like health alerts) in the background so the website never slows down.
+                                </p>
+                            </div>
+                        </div>
+                        <div className="p-8 bg-zinc-50 rounded-3xl border border-zinc-100">
+                            <h4 className="text-lg font-bold mb-4">Design Strategy</h4>
+                            <div className="space-y-4 text-sm text-zinc-600 leading-relaxed">
+                                <p>
+                                    <strong>Stateless Security:</strong> We use JWT tokens and OTP verification to ensure that only the right medical staff can see patient data.
+                                </p>
+                                <p>
+                                    <strong>Data Isolation:</strong> PostgreSQL stores the history, while Redis handles the "Live" data, ensuring the system is both fast and reliable.
+                                </p>
+                                <p>
+                                    <strong>AI Forensics:</strong> We use Scikit-Learn not just for show, but to find "Hidden Anomaly Patterns" in patient health over time.
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </DocsSection>
 
@@ -155,8 +186,24 @@ export default function DocsPage() {
                 </DocsSection>
 
                 {/* 🏗️ ARCHITECTURE */}
-                <DocsSection id="architecture" title="Project Layout & Cloud" icon={Workflow}>
+                <DocsSection id="architecture" title="System Design & Data Flow" icon={Workflow}>
                     <div className="space-y-8">
+                        {/* 🔄 DATA FLOW STEPS */}
+                        <div className="grid md:grid-cols-4 gap-4">
+                            {[
+                                { step: "01", title: "Ingestion", desc: "Sensors or Sims send raw vitals to our secure gateway." },
+                                { step: "02", title: "Analysis", desc: "AI Engine checks for anomalies using Isolation Forest." },
+                                { step: "03", title: "Signaling", desc: "Redis Pub/Sub broadcasts data via WebSockets." },
+                                { step: "04", title: "Persistence", desc: "Postgres stores the history for future playback." }
+                            ].map((item, i) => (
+                                <div key={i} className="p-6 bg-zinc-50 rounded-2xl border border-zinc-100 relative group hover:border-blue-200 transition-all">
+                                    <span className="text-[40px] font-black text-blue-600/10 absolute top-2 right-4 group-hover:text-blue-600/20">{item.step}</span>
+                                    <h5 className="font-bold mb-2 text-zinc-900">{item.title}</h5>
+                                    <p className="text-xs text-zinc-500 leading-relaxed">{item.desc}</p>
+                                </div>
+                            ))}
+                        </div>
+
                         <div className="relative p-12 bg-blue-50/40 rounded-[3rem] overflow-hidden border border-blue-100/50 shadow-sm">
                             <div className="grid md:grid-cols-3 gap-12 relative z-10">
                                 <div className="flex flex-col items-center text-center">
