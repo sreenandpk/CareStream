@@ -87,34 +87,68 @@ export default function DocsPage() {
                 </DocsSection>
 
                 {/* 🏗️ ARCHITECTURE */}
-                <DocsSection id="architecture" title="The Production Nexus" icon={Workflow}>
-                    <div className="relative p-12 bg-blue-50/40 rounded-[3rem] overflow-hidden border border-blue-100/50 shadow-sm">
-                        {/* 📊 ARCHITECTURE FLOW VISUALIZATION */}
-                        <div className="grid md:grid-cols-3 gap-12 relative z-10">
-                            <div className="flex flex-col items-center text-center">
-                                <div className="p-5 bg-white rounded-[2rem] text-blue-600 mb-6 border border-blue-100 shadow-sm">
-                                    <Cloud size={40} />
+                <DocsSection id="architecture" title="Clinical Infrastructure Schematic" icon={Workflow}>
+                    <div className="space-y-8">
+                        <div className="relative p-12 bg-blue-50/40 rounded-[3rem] overflow-hidden border border-blue-100/50 shadow-sm">
+                            {/* 📊 ARCHITECTURE FLOW VISUALIZATION */}
+                            <div className="grid md:grid-cols-3 gap-12 relative z-10">
+                                <div className="flex flex-col items-center text-center">
+                                    <div className="p-5 bg-white rounded-[2rem] text-blue-600 mb-6 border border-blue-100 shadow-sm">
+                                        <Cloud size={40} />
+                                    </div>
+                                    <h4 className="text-zinc-900 font-bold text-lg mb-2">Vercel Edge Nexus</h4>
+                                    <p className="text-zinc-500 text-sm leading-relaxed font-medium">Next.js 16 (React 19)<br />Edge Optimized Delivery</p>
                                 </div>
-                                <h4 className="text-zinc-900 font-bold text-lg mb-2">Vercel Edge</h4>
-                                <p className="text-zinc-500 text-sm leading-relaxed">Next.js 16+ Application<br />Global Delivery Network</p>
+                                <div className="flex flex-col items-center text-center">
+                                    <div className="p-5 bg-white rounded-[2rem] text-blue-600 mb-6 border border-blue-100 shadow-sm">
+                                        <Cpu size={40} />
+                                    </div>
+                                    <h4 className="text-zinc-900 font-bold text-lg mb-2">AWS Production Cluster</h4>
+                                    <p className="text-zinc-500 text-sm leading-relaxed font-medium">Dockerized Django REST Engine<br />Horizontal Scalability via ECS</p>
+                                </div>
+                                <div className="flex flex-col items-center text-center">
+                                    <div className="p-5 bg-white rounded-[2rem] text-blue-600 mb-6 border border-blue-100 shadow-sm">
+                                        <Database size={40} />
+                                    </div>
+                                    <h4 className="text-zinc-900 font-bold text-lg mb-2">Persistence Layer</h4>
+                                    <p className="text-zinc-500 text-sm leading-relaxed font-medium">Postgres 16 (Telemetry History)<br />Redis 7 (Real-time Signaling)</p>
+                                </div>
                             </div>
-                            <div className="flex flex-col items-center text-center">
-                                <div className="p-5 bg-white rounded-[2rem] text-blue-600 mb-6 border border-blue-100 shadow-sm">
-                                    <Cpu size={40} />
+                            {/* Connecting line */}
+                            <div className="absolute top-1/2 left-0 w-full h-[1px] bg-linear-to-r from-transparent via-blue-200 to-transparent -translate-y-1/2 hidden md:block" />
+                        </div>
+
+                        {/* 🔄 TELEMETRY PIPELINE */}
+                        <div className="grid md:grid-cols-2 gap-8">
+                            <div className="p-8 bg-zinc-50 rounded-[2.5rem] border border-zinc-100">
+                                <h4 className="text-xl font-bold mb-4 flex items-center gap-2">
+                                    <Zap className="text-blue-600" size={20} />
+                                    Asynchronous Pipeline
+                                </h4>
+                                <p className="text-zinc-600 text-sm leading-relaxed mb-6">
+                                    The system leverages Celery & Redis to decouple heavy operations from the request-response cycle, 
+                                    ensuring sub-second latency for clinical alerts and identity signals.
+                                </p>
+                                <div className="flex flex-wrap gap-2">
+                                    <span className="px-3 py-1 bg-white border border-zinc-200 rounded-full text-[10px] font-black uppercase tracking-widest text-zinc-400">Background Processing</span>
+                                    <span className="px-3 py-1 bg-white border border-zinc-200 rounded-full text-[10px] font-black uppercase tracking-widest text-zinc-400">Message Queueing</span>
                                 </div>
-                                <h4 className="text-zinc-900 font-bold text-lg mb-2">AWS ECS Cluster</h4>
-                                <p className="text-zinc-500 text-sm leading-relaxed">Django REST Engine<br />Celery Workers & Task Queue</p>
                             </div>
-                            <div className="flex flex-col items-center text-center">
-                                <div className="p-5 bg-white rounded-[2rem] text-blue-600 mb-6 border border-blue-100 shadow-sm">
-                                    <Database size={40} />
+                            <div className="p-8 bg-zinc-50 rounded-[2.5rem] border border-zinc-100">
+                                <h4 className="text-xl font-bold mb-4 flex items-center gap-2">
+                                    <Activity className="text-blue-600" size={20} />
+                                    Real-time Waveform Engine
+                                </h4>
+                                <p className="text-zinc-600 text-sm leading-relaxed mb-6">
+                                    Utilizes Django Channels and secure WebSocket tunneling (wss://) to stream clinical vitals 
+                                    with zero buffer, enabling instant crisis detection for medical staff.
+                                </p>
+                                <div className="flex flex-wrap gap-2">
+                                    <span className="px-3 py-1 bg-white border border-zinc-200 rounded-full text-[10px] font-black uppercase tracking-widest text-zinc-400">WebSocket Tunneling</span>
+                                    <span className="px-3 py-1 bg-white border border-zinc-200 rounded-full text-[10px] font-black uppercase tracking-widest text-zinc-400">Secure Telemetry</span>
                                 </div>
-                                <h4 className="text-zinc-900 font-bold text-lg mb-2">Postgres & Redis</h4>
-                                <p className="text-zinc-500 text-sm leading-relaxed">PostgreSQL 16 Storage<br />Redis Cache & Signaling</p>
                             </div>
                         </div>
-                        {/* Connecting line */}
-                        <div className="absolute top-1/2 left-0 w-full h-[1px] bg-linear-to-r from-transparent via-blue-200 to-transparent -translate-y-1/2 hidden md:block" />
                     </div>
                 </DocsSection>
 
