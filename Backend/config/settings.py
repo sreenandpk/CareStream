@@ -78,26 +78,22 @@ MIDDLEWARE = [
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 # =====================
-# CORS & SECURITY
+# CORS & SECURITY (DEBUG MODE: FORCE ALLOW)
 # =====================
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "https://carestream-v8.duckdns.org",
-    "https://care-stream.vercel.app",
-]
+CORS_ALLOW_ALL_ORIGINS = True  # 🔨 THE HAMMER: Let's break the wall
 CORS_ALLOW_CREDENTIALS = True
+
+# 🔥 RESTORED SSL SECURITY
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = True
 
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "https://carestream-v8.duckdns.org",
+    "https://carestream-cloud.duckdns.org",
     "https://care-stream.vercel.app",
+    "https://*.vercel.app",  # Support all Vercel previews
 ]
 
 CORS_ALLOW_HEADERS = [

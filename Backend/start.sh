@@ -9,7 +9,7 @@ touch logs/audit.log
 chmod -R 666 logs/
 
 # 2. Handle SSL with Certbot
-SUBDOMAIN="carestream-v8"
+SUBDOMAIN="carestream-cloud"
 DOMAIN="$SUBDOMAIN.duckdns.org"
 EMAIL="sreenandpk3@gmail.com"
 TOKEN="65dae4c9-1260-4568-8da8-7e4764db41fb"
@@ -45,10 +45,14 @@ while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
     echo "⌛ Waiting for Port 80 to release..."
     sleep 5
 
-    # CRITICAL: Remove dummy lineage so Certbot doesn't create -0001
-    rm -rf /etc/letsencrypt/live/$DOMAIN
-    rm -rf /etc/letsencrypt/archive/$DOMAIN
-    rm -rf /etc/letsencrypt/renewal/$DOMAIN.conf
+    # 🛡️ SMART CERTBOT: Only remove if we don't have a valid fullchain yet
+    if [ ! -f "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$DOMAIN/privkey.pem" -a "$(openssl x509 -noout -issuer -in /etc/letsencrypt/live/$DOMAIN/fullchain.pem 2>/dev/null | grep -c "localhost")" -eq 1 ]; then
+        echo "🧹 Clearing dummy/old lineage to prepare for real certificate..."
+        rm -rf /etc/letsencrypt/live/$DOMAIN
+        rm -rf /etc/letsencrypt/archive/$DOMAIN
+        rm -rf /etc/letsencrypt/renewal/$DOMAIN.conf
+    fi
+
     certbot certonly --standalone \
         -d $DOMAIN \
         --cert-name $DOMAIN \
