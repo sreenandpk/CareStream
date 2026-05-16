@@ -324,6 +324,17 @@ export default function LoginPage() {
                     </CardContent>
                 </Card>
 
+                <div className="mt-8 flex justify-center">
+                    <button 
+                        onClick={() => router.push("/docs")}
+                        className="flex items-center gap-2 px-6 py-3 bg-white border border-zinc-200 rounded-full text-[11px] font-black uppercase tracking-[0.2em] text-zinc-400 hover:text-[#5C61F2] hover:border-[#5C61F2]/30 hover:bg-[#5C61F2]/5 transition-all shadow-sm"
+                    >
+                        <Layers className="w-3.5 h-3.5" />
+                        System Documentation
+                    </button>
+                </div>
+            </div>
+
             </div>
         </div>
     );
