@@ -58,19 +58,15 @@ class LoginView(APIView):
             data=request.data
         )
         try:
-            serializer.is_valid(
-                raise_exception=True
-            )
+            serializer.is_valid(raise_exception=True)
         except ValidationError:
             username = request.data.get("username")
+            app_logger.error(f"❌ TRACE: Serializer Validation Failed for user: {username}")
             if username:
                 try:
-                    user = User.objects.get(
-                        username=username
-                    )
-                    security_logger.warning(
-                        f"Wrong login {username}"
-                    )
+                    user = User.objects.get(username=username)
+                    app_logger.error(f"🔍 TRACE: User {username} EXISTS but password check FAILED.")
+                    security_logger.warning(f"Wrong login {username}")
                     save_login_history(
                         request=request,
                         username=username,
@@ -79,6 +75,7 @@ class LoginView(APIView):
                         reason="wrong_password",
                     )
                 except User.DoesNotExist:
+                    app_logger.error(f"🔍 TRACE: User {username} DOES NOT EXIST in this database.")
                     save_login_history(
                         request=request,
                         username=username,

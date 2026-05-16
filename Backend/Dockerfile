@@ -47,7 +47,11 @@ COPY . .
 # Copy the start script and nginx config
 COPY start.sh /app/start.sh
 COPY nginx.conf /etc/nginx/sites-available/default
-RUN chmod +x /app/start.sh
+
+# 🛠️ FIX: Strip Windows line endings (\r) and make executable
+RUN apt-get update && apt-get install -y sed && \
+    sed -i 's/\r$//' /app/start.sh && \
+    chmod +x /app/start.sh
 
 # Ports for Nginx (80, 443) and Daphne (8000)
 EXPOSE 80 443 8000

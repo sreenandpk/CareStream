@@ -149,7 +149,13 @@ export const useVitalsStore = create<VitalsState>((set, get) => ({
     }
 
     // 🔬 PHASE 2: TELEMETRY NEXUS (Live Link)
-    const baseUrl = (process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8000").replace(/\/$/, "");
+    let baseUrl = (process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8000").replace(/\/$/, "");
+    
+    // 🔥 FORCE SECURE WEBSOCKETS IN PRODUCTION
+    if (!baseUrl.includes("localhost") && baseUrl.startsWith("ws://")) {
+        baseUrl = baseUrl.replace("ws://", "wss://");
+    }
+    
     const path = baseUrl.endsWith("/ws") ? "/vitals/" : "/ws/vitals/";
     const wsUrl = `${baseUrl}${path}?token=${encodeURIComponent(token)}`;
 
