@@ -14,38 +14,105 @@ import {
     Workflow,
     Zap,
     HeartPulse,
-    ChevronRight
+    ChevronRight,
+    Menu,
+    X
 } from "lucide-react";
 import { DocsHero, TechBadge } from "@/components/docs/DocsHero";
 import { DocsSection, DocsCard } from "@/components/docs/DocsComponents";
 
 export default function DocsPage() {
+    const router = useRouter();
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+
     return (
-        <div className="min-h-screen bg-white font-sans text-zinc-900 selection:bg-blue-100 selection:text-blue-900">
-            {/* 🧭 SIMPLE NAVIGATION */}
-            <nav className="fixed top-0 left-0 w-full z-50 px-6 py-4 flex justify-center pointer-events-none">
-                <div className="glass-card px-6 py-3 rounded-full flex items-center gap-8 pointer-events-auto border-blue-100/50">
-                    <div className="flex items-center gap-2 pr-6 border-r border-zinc-200">
-                        <div className="w-2 h-2 bg-blue-600 rounded-full" />
-                        <span className="text-sm font-bold tracking-tight uppercase">Project Guide</span>
+        <div className="min-h-screen bg-white text-zinc-900 selection:bg-blue-100 selection:text-blue-700">
+            {/* 🧭 MODERN NAV */}
+            <nav className="fixed top-6 left-1/2 -translate-x-1/2 z-50 w-[min(90%,1100px)]">
+                <motion.div 
+                    initial={{ y: -20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    className="bg-white/70 backdrop-blur-xl border border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.05)] rounded-full px-6 py-3 flex items-center justify-between"
+                >
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/20">
+                            <Shield className="text-white w-4 h-4" />
+                        </div>
+                        <span className="font-black tracking-tighter text-lg uppercase">
+                            Care<span className="text-blue-600">Stream</span>
+                        </span>
                     </div>
-                    <div className="flex items-center gap-6 text-sm font-medium text-zinc-500">
-                        <a href="#tech" className="hover:text-blue-600 transition-colors">Tools</a>
-                        <a href="#clinical" className="hover:text-blue-600 transition-colors">Features</a>
-                        <a href="#architecture" className="hover:text-blue-600 transition-colors">Layout</a>
+
+                    {/* Desktop Menu */}
+                    <div className="hidden md:flex items-center gap-8 text-[11px] font-bold uppercase tracking-widest text-zinc-500">
+                        <a href="#tech" className="hover:text-blue-600 transition-colors">Built With</a>
+                        <a href="#clinical" className="hover:text-blue-600 transition-colors">What it Does</a>
+                        <a href="#architecture" className="hover:text-blue-600 transition-colors">How it Works</a>
                         <a href="#identity" className="hover:text-blue-600 transition-colors">Safety</a>
                     </div>
-                </div>
+
+                    <div className="flex items-center gap-3">
+                        <button 
+                            onClick={() => router.push("/login")}
+                            className="hidden sm:flex items-center gap-2 px-5 py-2 bg-zinc-900 text-white rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-blue-600 transition-all active:scale-95"
+                        >
+                            Sign In
+                        </button>
+                        
+                        {/* Mobile Toggle */}
+                        <button 
+                            onClick={() => setIsMenuOpen(!isMenuOpen)}
+                            className="md:hidden p-2 text-zinc-500 hover:text-blue-600 transition-colors"
+                        >
+                            {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
+                        </button>
+                    </div>
+                </motion.div>
+
+                {/* Mobile Menu Overlay */}
+                <AnimatePresence>
+                    {isMenuOpen && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                            className="absolute top-20 left-0 w-full p-4 md:hidden"
+                        >
+                            <div className="bg-white rounded-3xl border border-zinc-100 shadow-2xl p-6 flex flex-col gap-4">
+                                {[
+                                    { name: "Built With", href: "#tech" },
+                                    { name: "What it Does", href: "#clinical" },
+                                    { name: "How it Works", href: "#architecture" },
+                                    { name: "Safety", href: "#identity" }
+                                ].map((item) => (
+                                    <a 
+                                        key={item.name}
+                                        href={item.href}
+                                        onClick={() => setIsMenuOpen(false)}
+                                        className="text-sm font-bold text-zinc-500 hover:text-blue-600 py-2 border-b border-zinc-50 last:border-0"
+                                    >
+                                        {item.name}
+                                    </a>
+                                ))}
+                                <button 
+                                    onClick={() => router.push("/login")}
+                                    className="w-full py-4 bg-blue-600 text-white rounded-2xl text-[12px] font-bold uppercase tracking-widest mt-2"
+                                >
+                                    Sign In
+                                </button>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </nav>
 
-            {/* 🏥 HERO SECTION */}
+            {/* 🚀 HERO SECTION */}
             <DocsHero />
 
-            <div className="container mx-auto px-6 max-w-6xl pb-32">
-
+            <div className="container mx-auto px-4 md:px-6 max-w-6xl pb-32">
                 {/* 🛠️ TECHNOLOGY STACK */}
                 <DocsSection id="tech" title="Built With" icon={Layers}>
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-12">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4 mb-12">
                         <TechBadge label="Next.js 16" category="Frontend" />
                         <TechBadge label="React 19" category="UI Library" />
                         <TechBadge label="Tailwind 4" category="Styling" />
@@ -60,8 +127,8 @@ export default function DocsPage() {
                         <TechBadge label="Vercel" category="Hosting" />
                     </div>
 
-                    <div className="grid md:grid-cols-2 gap-8">
-                        <div className="p-8 bg-zinc-50 rounded-3xl border border-zinc-100">
+                    <div className="grid md:grid-cols-2 gap-6 md:gap-8">
+                        <div className="p-6 md:p-8 bg-zinc-50 rounded-3xl border border-zinc-100">
                             <h4 className="text-lg font-bold mb-4">Why these tools?</h4>
                             <div className="space-y-4 text-sm text-zinc-600 leading-relaxed">
                                 <p>
@@ -75,7 +142,7 @@ export default function DocsPage() {
                                 </p>
                             </div>
                         </div>
-                        <div className="p-8 bg-zinc-50 rounded-3xl border border-zinc-100">
+                        <div className="p-6 md:p-8 bg-zinc-50 rounded-3xl border border-zinc-100">
                             <h4 className="text-lg font-bold mb-4">The Strategy</h4>
                             <div className="space-y-4 text-sm text-zinc-600 leading-relaxed">
                                 <p>
@@ -94,13 +161,13 @@ export default function DocsPage() {
 
                 {/* 🛡️ SAFETY */}
                 <DocsSection id="identity" title="Safety & Security" icon={Shield}>
-                    <div className="grid md:grid-cols-2 gap-8">
-                        <div className="p-10 bg-white rounded-3xl border border-zinc-100 shadow-sm">
-                            <h4 className="text-2xl font-bold mb-6 flex items-center gap-3">
+                    <div className="grid md:grid-cols-2 gap-6 md:gap-8">
+                        <div className="p-8 md:p-10 bg-white rounded-3xl border border-zinc-100 shadow-sm">
+                            <h4 className="text-xl md:text-2xl font-bold mb-6 flex items-center gap-3">
                                 <Fingerprint className="text-blue-600" />
                                 Account Guard
                             </h4>
-                            <p className="text-zinc-600 mb-6 leading-relaxed">
+                            <p className="text-zinc-600 mb-6 text-sm md:text-base leading-relaxed">
                                 When someone signs up, the system automatically checks if their email is real. If it's a fake email, 
                                 the account is locked instantly to keep the platform safe.
                             </p>
@@ -108,22 +175,22 @@ export default function DocsPage() {
                                 <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-bold uppercase tracking-wider">Automatic Verification</span>
                             </div>
                         </div>
-                        <div className="p-10 bg-white rounded-3xl border border-zinc-100 shadow-sm">
-                            <h4 className="text-2xl font-bold mb-6 flex items-center gap-3">
+                        <div className="p-8 md:p-10 bg-white rounded-3xl border border-zinc-100 shadow-sm">
+                            <h4 className="text-xl md:text-2xl font-bold mb-6 flex items-center gap-3">
                                 <Lock className="text-blue-600" />
                                 Login Security
                             </h4>
                             <ul className="space-y-4 text-zinc-600 text-sm">
                                 <li className="flex items-center gap-3">
-                                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
+                                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full shrink-0" />
                                     6-digit code sent to your email for login
                                 </li>
                                 <li className="flex items-center gap-3">
-                                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
+                                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full shrink-0" />
                                     Strict roles for Admins, Doctors, and Nurses
                                 </li>
                                 <li className="flex items-center gap-3">
-                                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
+                                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full shrink-0" />
                                     Locked sessions to prevent unauthorized access
                                 </li>
                             </ul>
@@ -133,7 +200,7 @@ export default function DocsPage() {
 
                 {/* 📡 WHAT IT DOES */}
                 <DocsSection id="clinical" title="What it Does" icon={Activity}>
-                    <div className="grid md:grid-cols-3 gap-8 mb-12">
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 mb-12">
                         <div className="p-8 bg-zinc-50 rounded-[2.5rem] border border-zinc-100">
                             <h4 className="text-xl font-bold mb-4">Live Monitoring</h4>
                             <p className="text-zinc-500 text-sm leading-relaxed">
@@ -154,26 +221,28 @@ export default function DocsPage() {
                         </div>
                     </div>
 
-                    <div className="p-10 bg-white rounded-3xl border border-zinc-100 shadow-sm group">
+                    <div className="p-8 md:p-10 bg-white rounded-3xl border border-zinc-100 shadow-sm group">
                         <div className="flex items-center gap-4 mb-8">
-                            <Cpu className="text-blue-600" size={32} />
+                            <div className="p-3 bg-blue-50 rounded-2xl">
+                                <Cpu className="text-blue-600" size={28} />
+                            </div>
                             <h4 className="text-2xl font-bold">The Hardware</h4>
                         </div>
-                        <div className="grid md:grid-cols-3 gap-12">
-                            <div>
-                                <h5 className="font-bold text-zinc-900 mb-2">MAX30102 Sensor</h5>
+                        <div className="grid md:grid-cols-3 gap-8 md:gap-12">
+                            <div className="space-y-2">
+                                <h5 className="font-bold text-zinc-900">MAX30102 Sensor</h5>
                                 <p className="text-sm text-zinc-500 leading-relaxed">
                                     A professional sensor that clips onto a finger to read heart rate and oxygen levels.
                                 </p>
                             </div>
-                            <div>
-                                <h5 className="font-bold text-zinc-900 mb-2">ESP32 Device</h5>
+                            <div className="space-y-2">
+                                <h5 className="font-bold text-zinc-900">ESP32 Device</h5>
                                 <p className="text-sm text-zinc-500 leading-relaxed">
                                     The "Mini Computer" that takes the sensor data and sends it to our website using Wi-Fi.
                                 </p>
                             </div>
-                            <div>
-                                <h5 className="font-bold text-zinc-900 mb-2">Jumper Wires</h5>
+                            <div className="space-y-2">
+                                <h5 className="font-bold text-zinc-900">Jumper Wires</h5>
                                 <p className="text-sm text-zinc-500 leading-relaxed">
                                     Simple wires that connect the sensor to the device to share data.
                                 </p>
@@ -184,26 +253,26 @@ export default function DocsPage() {
 
                 {/* 🤖 SMART FEATURES */}
                 <DocsSection id="forensics" title="Smart Features" icon={HeartPulse}>
-                    <div className="relative p-12 bg-zinc-950 rounded-[3rem] overflow-hidden border border-zinc-800 text-white shadow-2xl">
-                        <div className="absolute inset-0 bg-linear-to-b from-blue-500/10 to-transparent opacity-50" />
-                        <div className="relative z-10 grid md:grid-cols-2 gap-12">
+                    <div className="relative p-8 md:p-12 bg-zinc-950 rounded-[3rem] overflow-hidden border border-zinc-800 text-white shadow-2xl">
+                        <div className="absolute inset-0 bg-gradient-to-b from-blue-500/10 to-transparent opacity-50" />
+                        <div className="relative z-10 grid md:grid-cols-2 gap-10 md:gap-12">
                             <div>
                                 <h4 className="text-2xl font-bold mb-6">Review Replay</h4>
-                                <p className="text-zinc-400 leading-relaxed mb-8">
+                                <p className="text-zinc-400 text-sm md:text-base leading-relaxed mb-8">
                                     Doctors can "Rewind" a patient's data. It plays back their vitals exactly as they happened, 
                                     helping find what went wrong.
                                 </p>
-                                <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/10 text-blue-400 rounded-full text-xs font-bold border border-blue-500/20">
+                                <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/10 text-blue-400 rounded-full text-[10px] font-bold border border-blue-500/20 uppercase tracking-widest">
                                     Playback System
                                 </div>
                             </div>
                             <div>
                                 <h4 className="text-2xl font-bold mb-6">AI Health Check</h4>
-                                <p className="text-zinc-400 leading-relaxed mb-8">
+                                <p className="text-zinc-400 text-sm md:text-base leading-relaxed mb-8">
                                     Uses "Isolation Forest" AI to look for patterns. It automatically flags weird heart rates 
                                     that a human might miss.
                                 </p>
-                                <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500/10 text-emerald-400 rounded-full text-xs font-bold border border-emerald-500/20">
+                                <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500/10 text-emerald-400 rounded-full text-[10px] font-bold border border-emerald-500/20 uppercase tracking-widest">
                                     Smart Alerts
                                 </div>
                             </div>
@@ -215,56 +284,61 @@ export default function DocsPage() {
                 <DocsSection id="architecture" title="How it Works" icon={Workflow}>
                     <div className="space-y-8">
                         {/* 🔄 DATA FLOW STEPS */}
-                        <div className="grid md:grid-cols-4 gap-4">
+                        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
                             {[
-                                { step: "01", title: "Read", desc: "The sensor reads the patient's heartbeat." },
-                                { step: "02", title: "Think", desc: "The AI checks if the heartbeat is normal." },
-                                { step: "03", title: "Send", desc: "The data is sent instantly to the nurse's screen." },
-                                { step: "04", title: "Save", desc: "Everything is saved in a secure cloud database." }
+                                { step: "01", title: "Read", desc: "The sensor reads the heartbeat." },
+                                { step: "02", title: "Think", desc: "The AI checks if it's normal." },
+                                { step: "03", title: "Send", desc: "Sent instantly to the screen." },
+                                { step: "04", title: "Save", desc: "Saved in the secure cloud." }
                             ].map((item, i) => (
                                 <div key={i} className="p-6 bg-zinc-50 rounded-2xl border border-zinc-100 relative group hover:border-blue-200 transition-all">
-                                    <span className="text-[40px] font-black text-blue-600/10 absolute top-2 right-4 group-hover:text-blue-600/20">{item.step}</span>
+                                    <span className="text-[32px] md:text-[40px] font-black text-blue-600/10 absolute top-2 right-4 group-hover:text-blue-600/20">{item.step}</span>
                                     <h5 className="font-bold mb-2 text-zinc-900">{item.title}</h5>
-                                    <p className="text-xs text-zinc-500 leading-relaxed">{item.desc}</p>
+                                    <p className="text-[11px] text-zinc-500 leading-relaxed">{item.desc}</p>
                                 </div>
                             ))}
                         </div>
 
-                        <div className="relative p-12 bg-blue-50/40 rounded-[3rem] overflow-hidden border border-blue-100/50 shadow-sm">
-                            <div className="grid md:grid-cols-3 gap-12 relative z-10">
+                        <div className="relative p-8 md:p-12 bg-blue-50/40 rounded-[3rem] overflow-hidden border border-blue-100/50 shadow-sm">
+                            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-10 md:gap-12 relative z-10">
                                 <div className="flex flex-col items-center text-center">
                                     <div className="p-5 bg-white rounded-[2rem] text-blue-600 mb-6 border border-blue-100 shadow-sm">
-                                        <Cloud size={40} />
+                                        <Cloud size={32} />
                                     </div>
                                     <h4 className="text-zinc-900 font-bold text-lg mb-2">Vercel</h4>
-                                    <p className="text-zinc-500 text-sm leading-relaxed">Where the website lives.</p>
+                                    <p className="text-zinc-500 text-[13px] leading-relaxed">Where the website lives.</p>
                                 </div>
                                 <div className="flex flex-col items-center text-center">
                                     <div className="p-5 bg-white rounded-[2rem] text-blue-600 mb-6 border border-blue-100 shadow-sm">
-                                        <Cpu size={40} />
+                                        <Cpu size={32} />
                                     </div>
                                     <h4 className="text-zinc-900 font-bold text-lg mb-2">AWS Servers</h4>
-                                    <p className="text-zinc-500 text-sm leading-relaxed">The professional engine behind the scenes.</p>
+                                    <p className="text-zinc-500 text-[13px] leading-relaxed">The engine behind the scenes.</p>
                                 </div>
-                                <div className="flex flex-col items-center text-center">
+                                <div className="flex flex-col items-center text-center sm:col-span-2 lg:col-span-1">
                                     <div className="p-5 bg-white rounded-[2rem] text-blue-600 mb-6 border border-blue-100 shadow-sm">
-                                        <Shield size={40} />
+                                        <Shield size={32} />
                                     </div>
                                     <h4 className="text-zinc-900 font-bold text-lg mb-2">Security</h4>
-                                    <p className="text-zinc-500 text-sm leading-relaxed">Keeps everything safe and private.</p>
+                                    <p className="text-zinc-500 text-[13px] leading-relaxed">Keeps everything safe.</p>
                                 </div>
                             </div>
-                            <div className="absolute top-1/2 left-0 w-full h-[1px] bg-linear-to-r from-transparent via-blue-200 to-transparent -translate-y-1/2 hidden md:block" />
                         </div>
 
-                        <div className="p-10 bg-zinc-50 rounded-[2.5rem] border border-zinc-100">
+                        <div className="p-8 md:p-10 bg-zinc-50 rounded-[2.5rem] border border-zinc-100">
                             <h4 className="text-xl font-bold mb-4 flex items-center gap-2">
                                 <Terminal className="text-blue-600" size={20} />
                                 Technical Links
                             </h4>
-                            <div className="grid md:grid-cols-2 gap-8 text-sm text-zinc-500 leading-relaxed">
-                                <p><strong>Frontend:</strong> <code className="bg-white px-2 py-1 rounded">care-stream.vercel.app</code></p>
-                                <p><strong>Backend API:</strong> <code className="bg-white px-2 py-1 rounded">carestream-cloud.duckdns.org</code></p>
+                            <div className="grid sm:grid-cols-2 gap-6 md:gap-8 text-sm text-zinc-500">
+                                <div className="space-y-1">
+                                    <span className="font-bold text-zinc-900">Frontend:</span>
+                                    <div className="bg-white px-3 py-2 rounded-xl border border-zinc-200 font-mono text-[11px] truncate">care-stream.vercel.app</div>
+                                </div>
+                                <div className="space-y-1">
+                                    <span className="font-bold text-zinc-900">Backend API:</span>
+                                    <div className="bg-white px-3 py-2 rounded-xl border border-zinc-200 font-mono text-[11px] truncate">carestream-cloud.duckdns.org</div>
+                                </div>
                             </div>
                         </div>
                     </div>
