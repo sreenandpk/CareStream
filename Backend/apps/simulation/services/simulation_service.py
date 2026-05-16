@@ -90,6 +90,17 @@ def generate_vital_for_device(device):
             trend = config.trend if config else "STABLE"
             variability = config.variability if config else 0.02
 
+        # 🔥 STATE TRACKING (High-Performance Cache fallback)
+        from django.core.cache import cache
+        cache_key = f"sim_state:{device.id}"
+        cached_state = cache.get(cache_key, {})
+        
+        last_hr = cached_state.get("hr") or device.last_hr
+        last_spo2 = cached_state.get("spo2") or device.last_spo2
+        last_temp = cached_state.get("temp") or device.last_temp
+        last_sys = cached_state.get("sys") or device.last_sys
+        last_dia = cached_state.get("dia") or device.last_dia
+
         def get_value(v_min, v_max):
             val = random.uniform(v_min, v_max)
             noise = random.uniform(-1, 1) * variability * (v_max - v_min)
@@ -104,8 +115,7 @@ def generate_vital_for_device(device):
         elif trend == "IMPROVING":
             raw_hr -= 1
 
-        heart_rate = int(smooth(device.last_hr, raw_hr))
-        device.last_hr = heart_rate
+        heart_rate = int(smooth(last_hr, raw_hr))
 
         # 🔥 SPO2
         raw_spo2 = get_value(*ranges["spo2"])
@@ -114,28 +124,23 @@ def generate_vital_for_device(device):
         elif trend == "IMPROVING":
             raw_spo2 += 1
 
-        spo2 = int(smooth(device.last_spo2, raw_spo2))
-        device.last_spo2 = spo2
+        spo2 = int(smooth(last_spo2, raw_spo2))
 
         # 🔥 TEMP
-        temperature = round(smooth(device.last_temp, get_value(*ranges["temperature"])), 1)
-        device.last_temp = temperature
-
+        temperature = round(smooth(last_temp, get_value(*ranges["temperature"])), 1)
 
         # 🔥 BP
-        systolic = int(smooth(device.last_sys, get_value(*ranges["systolic"])))
-        device.last_sys = systolic
+        systolic = int(smooth(last_sys, get_value(*ranges["systolic"])))
+        diastolic = int(smooth(last_dia, get_value(*ranges["diastolic"])))
 
-        diastolic = int(smooth(device.last_dia, get_value(*ranges["diastolic"])))
-        device.last_dia = diastolic
-
-        # 💾 SAVE STATE
-        device.last_simulated_at = timezone.now()
-        device.save(update_fields=[
-            "last_hr", "last_spo2", "last_temp",
-            "last_sys", "last_dia",
-            "last_simulated_at"
-        ])
+        # 💾 CACHE STATE (Instantaneous)
+        cache.set(cache_key, {
+            "hr": heart_rate,
+            "spo2": spo2,
+            "temp": temperature,
+            "sys": systolic,
+            "dia": diastolic
+        }, 60)
 
         # 📦 BUILD VITAL
         vital_data = {
@@ -149,10 +154,7 @@ def generate_vital_for_device(device):
             "diastolic_bp": diastolic,
         }
 
-        logger.info(f"SIM[{trend}] {device.serial_number} HR:{heart_rate} SpO2:{spo2}")
-
         return create_vital(vital_data, user=None)
 
-    except Exception as e:
-        logger.error(f"Simulation failed for {device.serial_number}: {str(e)}")
-        return None
+    except Exception:
+        return None

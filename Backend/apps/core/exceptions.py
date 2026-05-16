@@ -34,11 +34,13 @@ def custom_exception_handler(exc, context):
             },
             status=response.status_code,
         )
+    import traceback
     return Response(
         {
             "success": False,
             "message": "Internal server error",
             "errors": str(exc),
+            "traceback": traceback.format_exc(),
             "status_code": 500,
         },
         status=status.HTTP_500_INTERNAL_SERVER_ERROR,

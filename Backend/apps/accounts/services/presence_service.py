@@ -29,11 +29,11 @@ class PresenceService:
     def get_client(cls):
         """Access the underlying Redis client from django-redis."""
         try:
-            # For django-redis, the native client is accessible via .client.get_client()
-            return cache.client.get_client()
+            if hasattr(cache, "client") and hasattr(cache.client, "get_client"):
+                return cache.client.get_client()
         except Exception as e:
-            app_logger.error(f"Redis Client Error: {str(e)}")
-            return None
+            app_logger.error(f"Presence: Redis Raw Client fallback triggered: {str(e)}")
+        return None
 
     PULSE_PREFIX = "presence:pulse:"
 
@@ -74,7 +74,8 @@ class PresenceService:
         if client:
             client.sadd(cls.SET_KEY, uid)
         else:
-            online_ids = set(cache.get(cls.SET_KEY, []))
+            online_ids_data = cache.get(cls.SET_KEY)
+            online_ids = set(online_ids_data) if online_ids_data else set()
             online_ids.add(uid)
             cache.set(cls.SET_KEY, list(online_ids), 86400)
 
@@ -136,7 +137,8 @@ class PresenceService:
             try: client.srem(cls.SET_KEY, uid)
             except: pass
         else:
-            online_ids = set(cache.get(cls.SET_KEY, []))
+            online_ids_data = cache.get(cls.SET_KEY)
+            online_ids = set(online_ids_data) if online_ids_data else set()
             if uid in online_ids:
                 online_ids.remove(uid)
                 cache.set(cls.SET_KEY, list(online_ids), 86400)

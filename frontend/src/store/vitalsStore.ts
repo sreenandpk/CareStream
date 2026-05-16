@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { VitalData } from '@/hooks/useVitalsSocket';
 import api from '@/lib/axios';
+import { generateSyntheticWaveform } from '@/lib/waveform-utils';
 
 interface VitalsState {
   vitalsMap: Record<string, VitalData>;
@@ -52,7 +53,6 @@ export const useVitalsStore = create<VitalsState>((set, get) => ({
     const serial = data.device.serial;
     const existing = state.vitalsMap[serial] || {};
     const now = Date.now();
-    const { generateSyntheticWaveform } = require('@/lib/waveform-utils');
     
     // Generate waveforms if missing or empty in current packet
     const hr = (data.vitals?.heart_rate !== undefined && data.vitals?.heart_rate !== null) 
@@ -90,9 +90,10 @@ export const useVitalsStore = create<VitalsState>((set, get) => ({
           ...data,
           vitals: { ...(existing.vitals || {}), ...data.vitals },
           waveform: waveform,
-          ward_id: data.patient?.ward_id || existing.ward_id,
-          room_id: data.patient?.room_id || existing.room_id,
-          bed_id: data.patient?.bed_id || existing.bed_id,
+          // 🏥 LOCATION PERSISTENCE: Prioritize live broadcast data, fallback to existing
+          ward_id: data.ward_id || data.patient?.ward_id || existing.ward_id,
+          room_id: data.room_id || data.patient?.room_id || existing.room_id,
+          bed_id: data.bed_id || data.patient?.bed_id || existing.bed_id,
           is_stale: false
         }
       }
@@ -127,7 +128,6 @@ export const useVitalsStore = create<VitalsState>((set, get) => ({
     try {
         const res = await api.get("vitals/admin/snapshot/");
         if (res.data.success) {
-            const { generateSyntheticWaveform } = require("@/lib/waveform-utils");
             const baseSnapshot = (res.data.results || []).map((d: any) => {
                 const hr = d.heart_rate !== undefined && d.heart_rate !== null ? d.heart_rate : 0;
                 const spo2 = d.spo2 !== undefined && d.spo2 !== null ? d.spo2 : 0;

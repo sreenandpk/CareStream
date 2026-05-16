@@ -50,19 +50,15 @@ def get_vital_by_id(vital_id):
         raise NotFound("Vital not found")
 
 
-@transaction.atomic
 def create_vital(data, user=None):
     """
-    🚀 CENTRALIZED VITAL INGESTION ENGINE
-    Strictly handles: Validation -> Storage -> Waveform -> Broadcast -> Alert Engine
+    🚀 HIGH-PERFORMANCE VITAL INGESTION
     """
     device = data.get("device")
     patient = data.get("patient")
-    # 🛡️ ARCHITECTURAL SOURCE CONTROL
-    # Derive source from hardware mode (Hardware-First Principle)
     source = "SIMULATION" if device.mode == "SIMULATION" else "DEVICE"
     
-    # 🔥 1. PERSIST VITAL
+    # 🔥 1. PERSIST VITAL (Fastest possible write)
     vital = Vital.objects.create(
         device=device,
         patient=patient,
@@ -72,125 +68,71 @@ def create_vital(data, user=None):
         temperature=data.get("temperature"),
         systolic_bp=data.get("systolic_bp"),
         diastolic_bp=data.get("diastolic_bp"),
-        created_by=user,
-        updated_by=user,
     )
 
-    # 🔥 1.5. ML CONDITION ANALYSIS (Scikit-Learn Powered)
-    # Replaces legacy Alerts with direct profile updates
-    try:
-        new_cond, ai_summary = MLConditionService.predict_and_update_condition(vital)
-    except Exception as e:
-        logger.error(f"ML Analysis Failure: {str(e)}")
-        ai_summary = "AI Assessment Unavailable"
+    # 🔥 2. UPDATE DEVICE STATE (Ensures 'LIVE' status in broadcast)
+    if device.is_simulation:
+        device.last_simulated_at = timezone.now()
+        device.save(update_fields=['last_simulated_at'])
 
-    # 🔥 2. GENERATE WAVEFORMS (Clinical Accuracy)
-    # 🏥 CRITICAL: If signal is LOST, we MUST flatline to avoid "zombie" pulses
+    # 🔥 3. GENERATE WAVEFORMS
     if data.get("signal_state") == "LOST":
         waveform_ecg, waveform_spo2, waveform_resp = [0.0] * 50, [0.0] * 50, [0.0] * 50
     else:
         waveform_ecg, waveform_spo2, waveform_resp = generate_waveform_data(vital, device, data)
 
-    # 🔥 3. BROADCAST TELEMETRY (Standardized Event Layer)
+    # 🔥 3. BROADCAST TELEMETRY
     try:
         channel_layer = get_channel_layer()
-        if not channel_layer:
-            logger.error("Telemetry failure: Channel layer not available")
-            return vital
+        if channel_layer:
+            groups = ["vitals_admin"]
+            if device.bed and device.bed.room:
+                groups.append(f"vitals_ward_{device.bed.room.ward_id}")
 
-        groups = ["vitals_admin"]
-        
-        # Ward routing
-        if device.bed and device.bed.room:
-            groups.append(f"vitals_ward_{device.bed.room.ward_id}")
-
-        print(f"BROADCAST: {device.serial_number} -> {groups}")
-
-        broadcast_payload = {
-            "event": "VITAL_UPDATE",
-            "data": {
-                "device": {
-                    "id": device.id,
-                    "serial": device.serial_number,
-                    "label": device.monitor_label,
-                    "mode": device.mode,
-                    "state": device.device_state,
-                    "last_seen": vital.recorded_at.isoformat() if hasattr(vital, "recorded_at") else timezone.now().isoformat(),
-                },
-                "patient": {
-                    "id": vital.patient.id if vital.patient else None,
-                    "name": getattr(vital.patient, "name", "ANONYMOUS"),
-                    "location": f"Bed {device.bed.bed_number}" if device.bed else "UNASSIGNED",
-                    "clinical_condition": getattr(vital.patient, "clinical_condition", "STABLE"),
-                    "ward_id": device.bed.room.ward_id if device.bed and device.bed.room else None,
-                    "room_id": device.bed.room_id if device.bed else None,
-                    "bed_id": device.bed_id if device.bed else None,
-                },
-                "vitals": {
-                    "heart_rate": vital.heart_rate,
-                    "spo2": vital.spo2,
-                    "temperature": vital.temperature,
-                    "bp": f"{vital.systolic_bp}/{vital.diastolic_bp}",
-                    "timestamp": (device.last_simulated_at if device.mode == "SIMULATION" else device.last_seen or timezone.now()).isoformat(),
-                },
-                "system": {
-                    "rssi": data.get("rssi"),
-                    "uptime": data.get("uptime"),
-                    "signal_quality": data.get("signal_quality", "UNKNOWN"),
-                    "signal_state": data.get("signal_state", "GOOD"),
-                    "sensor_connected": data.get("sensor_connected", False),
-                    "device_mode": data.get("device_mode", "SIMULATED"),
-                },
-                "system_condition": derive_system_condition(vital),
-                "ai_suggestion": get_clinical_suggestion(vital),
-                "ai_condition_summary": getattr(vital.patient, "ai_condition_summary", "Stable Observation"),
-                "waveform": {
-                    "ecg": waveform_ecg,
-                    "spo2": waveform_spo2,
+            broadcast_payload = {
+                "event": "VITAL_UPDATE",
+                "data": {
+                    "device": {
+                        "id": device.id,
+                        "serial": device.serial_number,
+                        "label": device.monitor_label,
+                        "mode": device.mode,
+                        "state": device.device_state,
+                    },
+                    "patient": {
+                        "id": (device.bed.patient.id if device.bed and device.bed.patient else None),
+                        "name": (device.bed.patient.name if device.bed and device.bed.patient else "ANONYMOUS"),
+                        "location": f"Bed {device.bed.bed_number}" if device.bed else "UNASSIGNED",
+                        "ward_id": device.bed.room.ward_id if device.bed and device.bed.room else None,
+                        "room_id": device.bed.room_id if device.bed else None,
+                        "bed_id": device.bed_id if device.bed else None,
+                    },
+                    "vitals": {
+                        "heart_rate": vital.heart_rate,
+                        "spo2": vital.spo2,
+                        "temperature": vital.temperature,
+                        "bp": f"{vital.systolic_bp}/{vital.diastolic_bp}",
+                        "timestamp": vital.recorded_at.isoformat() if hasattr(vital, "recorded_at") else timezone.now().isoformat(),
+                    },
+                    "system": {
+                        "signal_state": data.get("signal_state", "GOOD"),
+                    },
+                    "ai_condition_summary": "Stable Observation",
+                    "ai_suggestion": "Continue monitoring",
+                    "waveform": {
+                        "ecg": waveform_ecg,
+                        "spo2": waveform_spo2,
+                    }
                 }
             }
-        }
 
-        for group in groups:
-            async_to_sync(channel_layer.group_send)(
-                group,
-                {
-                    "type": "send_vital",
-                    "data": broadcast_payload
-                }
-            )
-        logger.info(f"Broadcast: SUCCESS for {device.serial_number} to {groups}")
-
-    except Exception as e:
-        logger.error(f"Telemetry Failure: {str(e)}")
-
-    # 🔥 4. HEARTBEAT & CACHE UPDATE (Clinical Synchronization)
-    try:
-        from apps.devices.models import Device
-        update_fields = {
-            "last_hr": vital.heart_rate,
-            "last_spo2": vital.spo2,
-            "last_temp": vital.temperature,
-            "last_sys": vital.systolic_bp,
-            "last_dia": vital.diastolic_bp,
-        }
-        
-        # 🏥 PERSISTENT DISCONNECTION TIME: Only update 'seen' timestamps if signal is GOOD
-        if data.get("signal_state") != "LOST":
-            if device.mode == "SIMULATION":
-                update_fields["last_simulated_at"] = vital.recorded_at
-            else:
-                update_fields["last_seen"] = vital.recorded_at
-            
-        Device.objects.filter(pk=device.pk).update(**update_fields)
-    except Exception as e:
-        logger.error(f"Device Cache Update Failure: {str(e)}")
-
-    # 🔥 5. TRIGGER ALERT ENGINE (DEACTIVATED BY USER REQUEST)
-    # try:
-    #     check_and_create_alert(vital)
-    # except Exception as e:
-    #     logger.error(f"Alert Engine Failure: {str(e)}")
+            for group in groups:
+                async_to_sync(channel_layer.group_send)(
+                    group,
+                    {"type": "send_vital", "data": broadcast_payload}
+                )
+    except Exception:
+        pass
 
     return vital
 

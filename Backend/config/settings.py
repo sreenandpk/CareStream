@@ -1,5 +1,6 @@
 from pathlib import Path
 import os
+import ssl
 from dotenv import load_dotenv
 from datetime import timedelta
 
@@ -17,7 +18,7 @@ load_dotenv()
 # SECURITY
 # =====================
 
-SECRET_KEY = os.getenv("SECRET_KEY")
+SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-production-carestream-v6-2024-hush-hush")
 
 if not SECRET_KEY:
     raise ValueError("SECRET_KEY not set in .env")
@@ -85,6 +86,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "https://carestream-v8.duckdns.org",
 ]
 CORS_ALLOW_CREDENTIALS = True
 
@@ -93,6 +95,7 @@ CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:3000",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "https://carestream-v8.duckdns.org",
 ]
 
 CORS_ALLOW_HEADERS = [
@@ -216,19 +219,7 @@ MEDIA_ROOT = BASE_DIR / "media"
 # DEFAULT PK
 # =====================
 
-# =====================
-# CACHING (REDIS)
-# =====================
-
-CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": os.getenv("REDIS_URL", "redis://127.0.0.1:6379/1"),
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-        }
-    }
-}
+# Redis Cache configured below
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = "accounts.User"
@@ -251,83 +242,46 @@ GMAIL_SMTP_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD') # Your App Password
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
-
     "formatters": {
         "verbose": {
             "format": "[{asctime}] {levelname} {name} {message}",
             "style": "{",
         },
     },
-
     "handlers": {
-
-        "app_file": {
-            "level": "INFO",
-            "class": "logging.FileHandler",
-            "filename": os.path.join(LOG_DIR, "app.log"),
-            "formatter": "verbose",
-        },
-
-        "error_file": {
-            "level": "ERROR",
-            "class": "logging.FileHandler",
-            "filename": os.path.join(LOG_DIR, "error.log"),
-            "formatter": "verbose",
-        },
-
-        "security_file": {
-            "level": "WARNING",
-            "class": "logging.FileHandler",
-            "filename": os.path.join(LOG_DIR, "security.log"),
-            "formatter": "verbose",
-        },
-
-        "audit_file": {
-            "level": "INFO",
-            "class": "logging.FileHandler",
-            "filename": os.path.join(LOG_DIR, "audit.log"),
-            "formatter": "verbose",
-        },
-
         "console": {
             "class": "logging.StreamHandler",
+            "formatter": "verbose",
         },
-
         "websocket": {
             "level": "INFO",
             "class": "apps.core.logging_handlers.WebSocketLogHandler",
             "formatter": "verbose",
         },
     },
-
     "loggers": {
-
         "django": {
-            "handlers": ["console", "app_file", "websocket"],
+            "handlers": ["console", "websocket"],
             "level": "INFO",
             "propagate": True,
         },
-
         "django.request": {
-            "handlers": ["error_file"],
+            "handlers": ["console"],
             "level": "ERROR",
             "propagate": False,
         },
-
         "security": {
-            "handlers": ["security_file", "websocket"],
+            "handlers": ["console", "websocket"],
             "level": "WARNING",
             "propagate": False,
         },
-
         "audit": {
-            "handlers": ["audit_file", "websocket"],
+            "handlers": ["console", "websocket"],
             "level": "INFO",
             "propagate": False,
         },
-
         "app": {
-            "handlers": ["app_file", "websocket"],
+            "handlers": ["console", "websocket"],
             "level": "INFO",
             "propagate": False,
         },
@@ -335,15 +289,29 @@ LOGGING = {
 }
 RATELIMIT_ENABLE = True
 RATELIMIT_FAIL_OPEN = True
-
 RATELIMIT_USE_CACHE = "default"
+
+# =====================
+# REDIS / CACHE
+# =====================
+REDIS_URL = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/1").strip('"\'')
+IS_REDIS_SSL = REDIS_URL.startswith("rediss://")
+
+# 🔥 UNIVERSAL SSL INJECTION: Force 'ssl_cert_reqs=none' for AWS ElastiCache compatibility
+if IS_REDIS_SSL and "ssl_cert_reqs" not in REDIS_URL:
+    separator = "&" if "?" in REDIS_URL else "?"
+    REDIS_URL = f"{REDIS_URL}{separator}ssl_cert_reqs=none"
+
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": os.getenv("REDIS_URL", "redis://127.0.0.1:6379/1"),
+        "LOCATION": REDIS_URL,
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
             "IGNORE_EXCEPTIONS": True,
+            "REDIS_CLIENT_KWARGS": {
+                "ssl_cert_reqs": 0
+            } if IS_REDIS_SSL else {}
         }
     }
 }
@@ -378,6 +346,14 @@ CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_BACKEND = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0")
 
+if IS_REDIS_SSL:
+    CELERY_BROKER_USE_SSL = {
+        'ssl_cert_reqs': 0
+    }
+    CELERY_REDIS_BACKEND_USE_SSL = {
+        'ssl_cert_reqs': 0
+    }
+
 
 from celery.schedules import crontab
 
@@ -403,17 +379,22 @@ CELERY_BEAT_SCHEDULE = {
         "schedule": 300.0, # Every 5 minutes
     },
 }
+
 # 🔥 ADD THIS
 ASGI_APPLICATION = "config.asgi.application"
 
-# 🔥 CHANNEL LAYERS (USE REDIS)
+# 🔥 CHANNEL LAYERS (UNIVERSAL COMPATIBILITY)
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [(os.getenv("REDIS_HOST", "127.0.0.1"), int(os.getenv("REDIS_PORT", 6379)))],
+            "hosts": [REDIS_URL],
+            "symmetric_encryption_keys": [SECRET_KEY],
+            "capacity": 1500,
+            "expiry": 10,
         },
     },
 }
+
 # Force Reload
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000

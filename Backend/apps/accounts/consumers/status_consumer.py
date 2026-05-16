@@ -27,33 +27,38 @@ class StatusConsumer(AsyncWebsocketConsumer):
 
         await self.accept()
 
-        # Update Redis Presence Store with SPECIFIC channel name
-        is_first_connection = await database_sync_to_async(PresenceService.go_online)(
-            self.user.id, self.channel_name
-        )
+        # 🔥 [NON-BLOCKING] Offload presence tracking to background to ensure zero-lag handshake
+        asyncio.create_task(self.register_presence())
 
-        # Start Heartbeat Pulse (Every 30s)
-        self.heartbeat_task = asyncio.create_task(self.heartbeat_loop())
-
-        # 🔄 [SYNC] Send the current master list of online users to the new client immediately
-        all_online_ids = await database_sync_to_async(PresenceService.get_online_user_ids)()
-        await self.send(text_data=json.dumps({
-            "type": "presence_sync",
-            "online_user_ids": all_online_ids
-        }))
-
-        if is_first_connection:
-            # Broadcast that this user is now online
-            await self.channel_layer.group_send(
-                self.group_name,
-                {
-                    "type": "status_update",
-                    "user_id": self.user.id,
-                    "status": "online",
-                    "username": self.user.username,
-                    "last_login": self.user.last_login.isoformat() if self.user.last_login else None
-                }
+    async def register_presence(self):
+        try:
+            is_first_connection = await database_sync_to_async(PresenceService.go_online)(
+                self.user.id, self.channel_name
             )
+            
+            # Start Heartbeat Pulse (Every 30s)
+            self.heartbeat_task = asyncio.create_task(self.heartbeat_loop())
+
+            # 🔄 [SYNC] Send the current master list of online users
+            all_online_ids = await database_sync_to_async(PresenceService.get_online_user_ids)()
+            await self.send(text_data=json.dumps({
+                "type": "presence_sync",
+                "online_user_ids": all_online_ids
+            }))
+
+            if is_first_connection:
+                await self.channel_layer.group_send(
+                    self.group_name,
+                    {
+                        "type": "status_update",
+                        "user_id": self.user.id,
+                        "status": "online",
+                        "username": self.user.username,
+                        "last_login": self.user.last_login.isoformat() if self.user.last_login else None
+                    }
+                )
+        except Exception as e:
+            print(f"❌ [PRESENCE_ERROR] Failed to register: {str(e)}")
 
     async def heartbeat_loop(self):
         """Background pulse to keep the user alive in the global store."""

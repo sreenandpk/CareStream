@@ -1,4 +1,5 @@
 "use client";
+// 🏥 REBUILD TRIGGER: NEXUS SYNC
 
 import { useState, useEffect } from "react";
 import useVitalsSocket, { VitalData } from "@/hooks/useVitalsSocket";
@@ -116,7 +117,12 @@ export default function VitalsAdminPage() {
   );
 
   const vitals = allAssignedPatients.length > 0 ? allAssignedPatients.map(patient => {
-    const live = liveVitals.find(v => v.patient.id === patient.id);
+    // 🛡️ DUAL-STRATEGY MATCHING: Primary (Patient ID), Secondary (Device Serial)
+    const live = liveVitals.find(v => 
+        (v.patient?.id && String(v.patient.id) === String(patient.id)) ||
+        (v.device?.serial && v.device.serial === patient.device_serial)
+    );
+    
     if (live) return live;
     return {
         device: { id: 0, serial: patient.device_serial || "UNKNOWN", label: patient.device_serial, mode: "REAL", state: "OFFLINE", last_seen: "" },
@@ -132,9 +138,10 @@ export default function VitalsAdminPage() {
 
   // 🔍 HIERARCHICAL FILTERING LOGIC
   const filteredVitals = (vitals || []).filter(v => {
-    const matchesWard = filters.wardId === "all" || v.ward_id === Number(filters.wardId);
-    const matchesRoom = filters.roomId === "all" || v.room_id === Number(filters.roomId);
-    const matchesBed = filters.bedId === "all" || v.bed_id === Number(filters.bedId);
+    const v_ward_id = v.ward_id || v.patient?.ward_id;
+    const matchesWard = filters.wardId === "all" || String(v_ward_id) === String(filters.wardId);
+    const matchesRoom = filters.roomId === "all" || String(v.room_id) === String(filters.roomId);
+    const matchesBed = filters.bedId === "all" || String(v.bed_id) === String(filters.bedId);
     return matchesWard && matchesRoom && matchesBed;
   });
 

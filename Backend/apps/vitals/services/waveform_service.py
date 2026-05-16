@@ -53,6 +53,8 @@ class WaveformEngine:
         noise_floor = 0.02 if quality == "WEAK" else 0.005
         amp_mod = 0.6 if quality == "WEAK" else 1.0
 
+        # --- CLINICAL ARTIFACTS ---
+        current_time = time.time()
         for _ in range(points):
             state.ecg_phase %= 1.0
             p = state.ecg_phase
@@ -83,9 +85,8 @@ class WaveformEngine:
                 t_p = (p - 0.45) / 0.25
                 val = 0.22 * (math.sin(t_p * math.pi) + 0.1 * math.sin(t_p * 2 * math.pi))
 
-            # --- CLINICAL ARTIFACTS ---
             # 1. Baseline Wander (Respiration-induced drift)
-            state.baseline_wander += 0.002 * math.sin(time.time() * 0.5)
+            state.baseline_wander += 0.002 * math.sin(current_time * 0.5)
             val += (state.baseline_wander * 0.1)
             
             # 2. Micro-Noise (Telemetry texture)

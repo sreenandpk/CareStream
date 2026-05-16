@@ -88,9 +88,9 @@ class LoginView(APIView):
                     )
             raise
         user = serializer.validated_data["user"]
-        audit_logger.info(
-            f"User found {user.username}"
-        )
+        # audit_logger.info(
+        #     f"User found {user.username}"
+        # )
         if user.is_locked and user.role != "ADMIN":
             app_logger.warning(f"Login failed: User {user.username} is LOCKED")
             security_logger.warning(
@@ -123,9 +123,9 @@ class LoginView(APIView):
             )
         if hasattr(user, "force_password_reset") and user.force_password_reset:
             token = create_reset_token(user)
-            audit_logger.info(
-                f"Reset token generated {user.username}"
-            )
+            # audit_logger.info(
+            #     f"Reset token generated {user.username}"
+            # )
             save_login_history(
                 request=request,
                 username=user.username,
@@ -149,9 +149,9 @@ class LoginView(APIView):
                 is_used=False
             ).delete()
             generate_otp(user, "LOGIN")
-            audit_logger.info(
-                f"Admin OTP sent {user.username}"
-            )
+            # audit_logger.info(
+            #     f"Admin OTP sent {user.username}"
+            # )
             save_login_history(
                 request=request,
                 username=user.username,
@@ -175,9 +175,9 @@ class LoginView(APIView):
 
         refresh = RefreshToken.for_user(user)
         access_token = str(refresh.access_token)
-        audit_logger.info(
-            f"Login success {user.username}"
-        )
+        # audit_logger.info(
+        #     f"Login success {user.username}"
+        # )
         save_login_history(
             request=request,
             username=user.username,
@@ -325,12 +325,8 @@ class RefreshView(APIView):
         app_logger.info("Refresh token request")
         refresh_token = request.COOKIES.get("refresh")
         if not refresh_token:
-            security_logger.warning(
-                "Refresh token missing"
-            )
-            raise ValidationError(
-                "Refresh token missing"
-            )
+            security_logger.warning("Refresh token missing")
+            raise ValidationError("Refresh token missing")
         try:
             refresh = RefreshToken(refresh_token)
             access_token = str(refresh.access_token)
@@ -339,18 +335,19 @@ class RefreshView(APIView):
             user_id = refresh.get("user_id")
             user = User.objects.get(id=user_id)
             
-            audit_logger.info(
-                f"Access token refreshed for {user.username}"
-            )
-            response = Response(
-                {
-                    "success": True,
-                    "message": "Token refreshed",
-                    "data": {
-                        "access": access_token,
-                    },
+            audit_logger.info(f"Access token refreshed for {user.username}")
+            response = Response({
+                "success": True,
+                "message": "Token refreshed",
+                "data": {
+                    "access": access_token,
+                    "user": {
+                        "id": user.id,
+                        "username": user.username,
+                        "role": user.role
+                    }
                 }
-            )
+            })
             response.set_cookie(
                 key="refresh",
                 value=str(refresh),
@@ -360,15 +357,13 @@ class RefreshView(APIView):
                 path="/",
             )
             return response
-        except TokenError:
-
-            security_logger.warning(
-                "Invalid refresh token"
-            )
-
-            raise ValidationError(
-                "Invalid refresh token"
-            )
+        except Exception as e:
+            security_logger.error(f"Token refresh failed: {str(e)}")
+            return Response({
+                "success": False,
+                "message": "Invalid or expired refresh token. Please login again.",
+                "errors": str(e)
+            }, status=401)
 @method_decorator(
     ratelimit(key="ip", rate="60/m", block=True),
     name="post",

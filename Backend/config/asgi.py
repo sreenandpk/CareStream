@@ -1,25 +1,20 @@
 import os
-import django
-
 from django.core.asgi import get_asgi_application
-from channels.routing import ProtocolTypeRouter, URLRouter
 
 # 🔥 SET SETTINGS FIRST
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 
-# 🔥 IMPORTANT: initialize Django
-django.setup()
+# 🔥 Initialize Django ASGI application early
+django_asgi_app = get_asgi_application()
 
-# 🔥 NOW IMPORT PROJECT MODULES (after setup)
+# 🔥 NOW IMPORT CHANNELS & PROJECT MODULES (after get_asgi_application)
+from channels.routing import ProtocolTypeRouter, URLRouter
 from django.urls import path
 from apps.core.middleware.jwt_auth_middleware import JWTAuthMiddleware
 from apps.core.consumers.log_consumer import LogConsumer
 import apps.alerts.routing
 import apps.vitals.routing
 import apps.accounts.routing
-
-# 🔥 Django ASGI app
-django_asgi_app = get_asgi_application()
 
 # 🔥 FINAL APPLICATION
 print("ASGI SERVER STARTING: WebSocket Layer Active")

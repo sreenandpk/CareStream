@@ -10,6 +10,8 @@ ENV PYTHONUNBUFFERED 1
 RUN apt-get update && apt-get install -y \
     build-essential \
     libpq-dev \
+    netcat-traditional \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies into a local directory
@@ -26,9 +28,14 @@ ENV PYTHONUNBUFFERED 1
 # 🚀 PATH: Include local bin for --user installs
 ENV PATH=/root/.local/bin:$PATH
 
-# Install only runtime system dependencies
+# Install runtime dependencies + curl
 RUN apt-get update && apt-get install -y \
     libpq5 \
+    curl \
+    nginx \
+    certbot \
+    python3-certbot-nginx \
+    procps \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy installed packages from builder
@@ -37,5 +44,13 @@ COPY --from=builder /root/.local /root/.local
 # Copy project files
 COPY . .
 
-# Port for Daphne
-EXPOSE 8000
+# Copy the start script and nginx config
+COPY start.sh /app/start.sh
+COPY nginx.conf /etc/nginx/sites-available/default
+RUN chmod +x /app/start.sh
+
+# Ports for Nginx (80, 443) and Daphne (8000)
+EXPOSE 80 443 8000
+
+# Launch everything
+CMD ["./start.sh"]
