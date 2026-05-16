@@ -137,7 +137,7 @@ export default function DocsPage() {
 
                 {/* 📡 CLINICAL NEXUS */}
                 <DocsSection id="clinical" title="Clinical Monitoring Nexus" icon={Activity}>
-                    <div className="grid md:grid-cols-3 gap-8">
+                    <div className="grid md:grid-cols-3 gap-8 mb-12">
                         <div className="p-8 bg-zinc-50 rounded-[2.5rem] border border-zinc-100">
                             <h4 className="text-xl font-bold mb-4">Hardware Edge</h4>
                             <p className="text-zinc-500 text-sm leading-relaxed">
@@ -156,6 +156,33 @@ export default function DocsPage() {
                             <p className="text-zinc-500 text-sm leading-relaxed">
                                 Seamlessly switch between <strong>Simulation Mode</strong> and <strong>Real Device Mode</strong>.
                             </p>
+                        </div>
+                    </div>
+
+                    <div className="p-10 bg-white rounded-3xl border border-zinc-100 shadow-sm group">
+                        <div className="flex items-center gap-4 mb-8">
+                            <Cpu className="text-blue-600" size={32} />
+                            <h4 className="text-2xl font-bold">Hardware Assembly</h4>
+                        </div>
+                        <div className="grid md:grid-cols-3 gap-12">
+                            <div>
+                                <h5 className="font-bold text-zinc-900 mb-2">MAX30102 Sensor</h5>
+                                <p className="text-sm text-zinc-500 leading-relaxed">
+                                    High-accuracy pulse oximeter and heart-rate sensor used to capture clinical-grade patient vitals.
+                                </p>
+                            </div>
+                            <div>
+                                <h5 className="font-bold text-zinc-900 mb-2">ESP32 Brain</h5>
+                                <p className="text-sm text-zinc-500 leading-relaxed">
+                                    The "Hardware Brain" that reads sensor data and sends it directly to our cloud via secure WebSockets.
+                                </p>
+                            </div>
+                            <div>
+                                <h5 className="font-bold text-zinc-900 mb-2">I2C Jumper Logic</h5>
+                                <p className="text-sm text-zinc-500 leading-relaxed">
+                                    Uses standard jumper wires to establish I2C communication between the sensor and the microcontroller.
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </DocsSection>
