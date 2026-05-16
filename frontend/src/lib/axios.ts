@@ -26,13 +26,9 @@ api.interceptors.request.use(
     (config) => {
         const state = useAuthStore.getState();
         const token = state.accessToken;
-        const hasHydrated = state._hasHydrated;
 
-        // If we haven't hydrated yet, the token might still be null 
-        // even if the user has a valid session in localStorage.
-        if (!hasHydrated && !token) {
-            console.warn("Axios: Request issued before hydration was complete. Initializing session drift protection.");
-        }
+        // 🔍 EMERGENCY TRACE: Log the outgoing request
+        console.log(`🚀 AXIOS START: ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
 
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
@@ -40,6 +36,7 @@ api.interceptors.request.use(
         return config;
     },
     (error) => {
+        console.error("❌ AXIOS REQUEST ERROR:", error);
         return Promise.reject(error);
     }
 );
