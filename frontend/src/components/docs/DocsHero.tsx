@@ -32,16 +32,16 @@ export const DocsHero = () => {
 
                     <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-full text-sm font-medium mb-8 border border-blue-100">
                         <ShieldCheck size={16} />
-                        <span>Production-Grade Clinical Infrastructure</span>
+                        <span>Project Prototype Version</span>
                     </div>
 
                     <h1 className="text-6xl md:text-7xl font-bold tracking-tight text-zinc-900 mb-8 max-w-4xl">
-                        CareStream: <span className="text-blue-600">The Identity & Monitoring Nexus</span>
+                        CareStream: <span className="text-blue-600">Health Monitoring Project</span>
                     </h1>
 
                     <p className="text-xl text-zinc-600 mb-12 max-w-2xl leading-relaxed">
-                        A professional hospital-grade platform unifying real-time patient telemetry,
-                        medical device integration, and secure identity verification into a high-fidelity command center.
+                        A prototype project that shows how to monitor patient health in real-time.
+                        It connects hardware sensors to a simple web dashboard for doctors and nurses.
                     </p>
 
                     <div className="flex gap-4">
