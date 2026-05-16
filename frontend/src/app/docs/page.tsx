@@ -24,9 +24,9 @@ export default function DocsPage() {
             {/* 🧭 PREMIUM NAVIGATION */}
             <nav className="fixed top-0 left-0 w-full z-50 px-6 py-4 flex justify-center pointer-events-none">
                 <div className="glass-card px-6 py-3 rounded-full flex items-center gap-8 pointer-events-auto border-blue-100/50">
-                    <div className="flex items-center gap-2 pr-6 border-r border-zinc-200">
-                        <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse" />
-                        <span className="text-sm font-bold tracking-tight">CARESTREAM NEXUS</span>
+                    <div className="flex items-center gap-3 pr-6 border-r border-zinc-200">
+                        <img src="/icon.png" alt="CareStream Logo" className="w-6 h-6 rounded-md" />
+                        <span className="text-sm font-bold tracking-tight text-blue-600 uppercase">CARESTREAM</span>
                     </div>
                     <div className="flex items-center gap-6 text-sm font-medium text-zinc-500">
                         <a href="#tech" className="hover:text-blue-600 transition-colors">Stack</a>

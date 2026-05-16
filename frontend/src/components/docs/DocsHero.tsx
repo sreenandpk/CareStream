@@ -28,6 +28,8 @@ export const DocsHero = () => {
                     transition={{ duration: 0.6 }}
                     className="flex flex-col items-center text-center"
                 >
+                    <img src="/icon.png" alt="CareStream" className="w-20 h-20 mb-8 rounded-2xl shadow-xl border border-white/50" />
+                    
                     <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-full text-sm font-medium mb-8 border border-blue-100">
                         <ShieldCheck size={16} />
                         <span>Production-Grade Clinical Infrastructure</span>
