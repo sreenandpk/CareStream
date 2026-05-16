@@ -45,12 +45,19 @@ export const DocsHero = () => {
                     </p>
 
                     <div className="flex gap-4">
-                        <button className="h-12 px-8 bg-zinc-900 text-white rounded-full font-medium hover:bg-zinc-800 transition-all flex items-center gap-2">
+                        <button 
+                            onClick={() => document.getElementById('architecture')?.scrollIntoView({ behavior: 'smooth' })}
+                            className="h-12 px-8 bg-zinc-900 text-white rounded-full font-medium hover:bg-zinc-800 transition-all flex items-center gap-2 cursor-pointer"
+                        >
                             Explore Architecture <ChevronRight size={18} />
                         </button>
-                        <button className="h-12 px-8 bg-white border border-zinc-200 text-zinc-900 rounded-full font-medium hover:bg-zinc-50 transition-all">
+                        <a 
+                            href="https://github.com/sreenandpk/CareStream"
+                            target="_blank"
+                            className="h-12 px-8 bg-white border border-zinc-200 text-zinc-900 rounded-full font-medium hover:bg-zinc-50 transition-all flex items-center justify-center cursor-pointer"
+                        >
                             GitHub Repository
-                        </button>
+                        </a>
                     </div>
                 </motion.div>
             </div>
