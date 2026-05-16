@@ -48,7 +48,6 @@ export default function LoginPage() {
         } catch (err: any) {
             const errorMsg = err.response?.data?.message || err.response?.data?.detail || "Invalid credentials";
             
-            // 🛡️ High-Fidelity Redirect: Move inactive users to the professional landing page
             if (errorMsg.toLowerCase().includes("inactive")) {
                 router.push("/deactivated");
                 return;
@@ -56,7 +55,6 @@ export default function LoginPage() {
 
             setError(errorMsg);
             
-            // Log security events to console for debugging
             if (err.response?.status === 429) {
                 console.warn("Security: Rate limit exceeded");
             } else if (errorMsg.toLowerCase().includes("locked")) {
@@ -125,7 +123,6 @@ export default function LoginPage() {
     
     return (
         <div className="min-h-screen !bg-[#F8F9FB] flex flex-col items-center justify-center p-6 relative overflow-hidden">
-            {/* 🎨 Aesthetic Background Decorations */}
             <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#5C61F2]/5 rounded-full blur-[120px]" />
             <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#5C61F2]/5 rounded-full blur-[120px]" />
 
@@ -333,8 +330,6 @@ export default function LoginPage() {
                         System Documentation
                     </button>
                 </div>
-            </div>
-
             </div>
         </div>
     );
