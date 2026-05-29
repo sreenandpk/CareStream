@@ -29,7 +29,9 @@ class VitalsSnapshotView(APIView):
             )
 
             # 🔥 CLINICAL SCOPING (Strict Data Isolation)
-            if request.user.role == "NURSE":
+            if request.user.username.startswith("demo_"):
+                pass  # Dynamic bypass: Demo users see all clinical environments
+            elif request.user.role == "NURSE":
                 from apps.wards.models import Ward
                 active_ward_ids = Ward.objects.filter(
                     nurses=request.user,
@@ -83,7 +85,9 @@ class VitalsHistoryView(APIView):
             ).select_related("device", "device__bed", "device__bed__room", "device__bed__room__ward")
 
             # 🔥 CLINICAL SCOPING (Strict Data Isolation)
-            if request.user.role == "NURSE":
+            if request.user.username.startswith("demo_"):
+                pass  # Dynamic bypass: Demo users see all clinical environments
+            elif request.user.role == "NURSE":
                 from apps.wards.models import Ward
                 active_ward_ids = Ward.objects.filter(
                     nurses=request.user,
