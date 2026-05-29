@@ -26,9 +26,14 @@ services:
     environment:
       - DB_HOST=db
       - DB_PORT=5432
+      - DB_NAME=carestream_db
+      - DB_USER=carestream_user
+      - DB_PASSWORD=carestream_pass
       - REDIS_URL=redis://redis:6379/0
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
     ports:
       - "8000:8000"
     depends_on:
@@ -45,9 +50,14 @@ services:
     environment:
       - DB_HOST=db
       - DB_PORT=5432
+      - DB_NAME=carestream_db
+      - DB_USER=carestream_user
+      - DB_PASSWORD=carestream_pass
       - REDIS_URL=redis://redis:6379/0
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
     depends_on:
       - db
       - redis
@@ -62,9 +72,14 @@ services:
     environment:
       - DB_HOST=db
       - DB_PORT=5432
+      - DB_NAME=carestream_db
+      - DB_USER=carestream_user
+      - DB_PASSWORD=carestream_pass
       - REDIS_URL=redis://redis:6379/0
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
     depends_on:
       - db
       - redis

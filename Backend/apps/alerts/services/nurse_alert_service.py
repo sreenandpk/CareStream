@@ -5,31 +5,43 @@ from apps.wards.models import NurseShift
 
 
 def get_nurse_alerts(user):
-    now = timezone.now()
-    # 🔥 Phase 1: Check for active duty shift
-    active_wards = list(NurseShift.objects.filter(
-        nurse=user,
-        is_active=True,
-        start_time__lte=now,
-        end_time__gte=now
-    ).values_list('ward_id', flat=True))
-
-    # 🔥 Phase 2: Standby Fallback
-    # If no active shift, allow observational oversight of assigned wards
-    if not active_wards:
-        from apps.wards.models import Ward
-        active_wards = list(Ward.objects.filter(nurses=user).values_list('id', flat=True))
-
-    return (
-        Alert.objects.filter(
-            patient__bed__room__ward_id__in=active_wards,
-            is_active=True,
-            is_deleted=False,
+    if user.username == "demo_nurse":
+        # Public Demo: Return all active alerts so the recruiter has a lively telemetry command feed
+        return (
+            Alert.objects.filter(
+                is_active=True,
+                is_deleted=False,
+            )
+            .select_related("patient", "device")
+            .distinct()
+            .order_by("-created_at")[:100]
         )
-        .select_related("patient", "device")
-        .distinct()
-        .order_by("-created_at")[:100]
-    )
+    else:
+        now = timezone.now()
+        # 🔥 Phase 1: Check for active duty shift
+        active_wards = list(NurseShift.objects.filter(
+            nurse=user,
+            is_active=True,
+            start_time__lte=now,
+            end_time__gte=now
+        ).values_list('ward_id', flat=True))
+
+        # 🔥 Phase 2: Standby Fallback
+        # If no active shift, allow observational oversight of assigned wards
+        if not active_wards:
+            from apps.wards.models import Ward
+            active_wards = list(Ward.objects.filter(nurses=user).values_list('id', flat=True))
+
+        return (
+            Alert.objects.filter(
+                patient__bed__room__ward_id__in=active_wards,
+                is_active=True,
+                is_deleted=False,
+            )
+            .select_related("patient", "device")
+            .distinct()
+            .order_by("-created_at")[:100]
+        )
 
 
 def get_nurse_alert_by_id(alert_id, user):
@@ -42,6 +54,9 @@ def get_nurse_alert_by_id(alert_id, user):
         )
     except Alert.DoesNotExist:
         raise NotFound("Alert not found")
+
+    if user.username == "demo_nurse":
+        return alert
 
     # Check if the nurse is currently active for the ward where the patient is located
     now = timezone.now()

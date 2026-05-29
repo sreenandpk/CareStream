@@ -6,6 +6,7 @@ from .views.auth_views import (
     VerifyOTPView,
     ForgotPasswordView,
     ConfirmResetView,
+    DemoLoginView,
 )
 from .views.user_views import (
     CreateUserView,
@@ -29,6 +30,7 @@ from apps.accounts.views.dashboard_stats_view import DashboardStatsView
 
 urlpatterns = [
     path("login/", LoginView.as_view()),
+    path("demo-login/", DemoLoginView.as_view()),
     path("verify-otp/", VerifyOTPView.as_view()),
     path("refresh/", RefreshView.as_view()),
     path("logout/", LogoutView.as_view()),

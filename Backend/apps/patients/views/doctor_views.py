@@ -18,11 +18,19 @@ class DoctorPatientListView(APIView):
 
     def get(self, request):
         user = request.user
-        patients = (
-            Patient.objects.filter(doctor=user, is_active=True)
-            .select_related("bed__room__ward", "doctor")
-            .order_by("-admission_date")
-        )
+        if user.username == "demo_doctor":
+            # Public Demo: Return all active patients so the dashboard is beautifully populated
+            patients = (
+                Patient.objects.filter(is_active=True)
+                .select_related("bed__room__ward", "doctor")
+                .order_by("-admission_date")
+            )
+        else:
+            patients = (
+                Patient.objects.filter(doctor=user, is_active=True)
+                .select_related("bed__room__ward", "doctor")
+                .order_by("-admission_date")
+            )
         serializer = DoctorPatientSerializer(patients, many=True)
         return Response({"success": True, "data": serializer.data})
 
@@ -31,7 +39,10 @@ class DoctorPatientDetailView(APIView):
     permission_classes = [IsAuthenticated, IsDoctor]
 
     def get(self, request, patient_id):
-        patient = get_object_or_404(Patient.objects.filter(doctor=request.user), id=patient_id)
+        if request.user.username == "demo_doctor":
+            patient = get_object_or_404(Patient.objects.filter(is_active=True), id=patient_id)
+        else:
+            patient = get_object_or_404(Patient.objects.filter(doctor=request.user), id=patient_id)
         serializer = DoctorPatientSerializer(patient)
         return Response({"success": True, "data": serializer.data})
 

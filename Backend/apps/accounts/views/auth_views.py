@@ -406,9 +406,17 @@ class LogoutView(APIView):
                 security_logger.warning(f"Invalid refresh token during logout attempt for {username}")
 
         if request.user.is_authenticated:
-            # This is the line that wipes all sessions
-            force_logout_user(request.user)
-            audit_logger.info(f"Global Session Purge executed for {username}")
+            if request.user.username.startswith("demo_"):
+                # Isolate logout: Only close the individual session token
+                auth_header = request.headers.get("Authorization")
+                if auth_header and auth_header.startswith("Bearer "):
+                    token = auth_header.split(" ")[1]
+                    close_session(token)
+                audit_logger.info(f"Demo Session isolated logout completed for {username}")
+            else:
+                # Global Session Purge for real staff
+                force_logout_user(request.user)
+                audit_logger.info(f"Global Session Purge executed for {username}")
 
         response.delete_cookie("refresh", path="/")
         return response
@@ -554,3 +562,63 @@ class ConfirmResetView(APIView):
             "success": True, 
             "message": "Credentials updated successfully"
         })
+
+
+@method_decorator(
+    ratelimit(key="ip", rate="10/min", block=True),
+    name="post",
+)
+class DemoLoginView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def post(self, request):
+        role_param = request.query_params.get("role", "doctor").upper()
+        if role_param not in ["DOCTOR", "NURSE"]:
+            role_param = "DOCTOR"
+
+        username = f"demo_{role_param.lower()}"
+        
+        # 1. Retrieve or dynamically seed the guest account
+        demo_user, created = User.objects.get_or_create(
+            username=username,
+            defaults={
+                "email": f"{username}@carestream.local",
+                "role": role_param,
+                "is_verified": True,
+                "is_active": True,
+            }
+        )
+        
+        # 2. Issue access and refresh JWT tokens statelessly
+        refresh = RefreshToken.for_user(demo_user)
+        access_token = str(refresh.access_token)
+        
+        # 3. Log the stateful session in CareStream's session tracking service
+        create_session(
+            request=request,
+            user=demo_user,
+            token=access_token,
+        )
+        
+        response = Response({
+            "success": True,
+            "message": "Demo login successful",
+            "data": {
+                "username": demo_user.username,
+                "role": demo_user.role,
+                "access": access_token,
+                "is_demo": True
+            }
+        })
+        
+        # 4. Set HttpOnly Refresh Cookie
+        response.set_cookie(
+            key="refresh",
+            value=str(refresh),
+            httponly=True,
+            secure=not settings.DEBUG,
+            samesite="Lax" if settings.DEBUG else "None",
+            path="/",
+        )
+        return response

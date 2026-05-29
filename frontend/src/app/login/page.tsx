@@ -1,7 +1,7 @@
 "use client";
 // Login Page - Fixed at 2026-04-14 18:20
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
 import api from "@/lib/axios";
@@ -26,6 +26,29 @@ export default function LoginPage() {
 
     const { setAuth } = useAuthStore();
     const router = useRouter();
+
+    // Auto-login trigger for Portfolio Launch
+    useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const demoRole = urlParams.get("demo");
+        if (demoRole === "doctor" || demoRole === "nurse") {
+            triggerDemoLogin(demoRole);
+        }
+    }, []);
+
+    const triggerDemoLogin = async (role: "doctor" | "nurse") => {
+        setError("");
+        setLoading(true);
+        try {
+            const res = await api.post(`accounts/demo-login/?role=${role}`);
+            setAuth(res.data.data, res.data.data.access);
+            router.push(role === "doctor" ? "/dashboard/doctor" : "/dashboard/nurse");
+        } catch (err: any) {
+            setError(err.response?.data?.message || "Failed to initialize secure demo session.");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();

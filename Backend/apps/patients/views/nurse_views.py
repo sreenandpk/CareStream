@@ -22,25 +22,33 @@ class NursePatientListView(APIView):
     )
     def get(self, request):
         user = request.user
-        from apps.wards.models import NurseShift
-        from django.utils import timezone
-        now = timezone.now()
-        
-        active_wards = NurseShift.objects.filter(
-            nurse=user,
-            is_active=True,
-            start_time__lte=now,
-            end_time__gte=now
-        ).values_list('ward_id', flat=True)
-
-        patients = (
-            Patient.objects.filter(
-                bed__room__ward_id__in=active_wards,
-                is_active=True
+        if user.username == "demo_nurse":
+            # Public Demo: Return all active patients so the dashboard is beautifully populated
+            patients = (
+                Patient.objects.filter(is_active=True)
+                .select_related("bed__room__ward", "doctor")
+                .order_by("-admission_date")
             )
-            .select_related("bed__room__ward", "doctor")
-            .order_by("-admission_date")
-        ).distinct()
+        else:
+            from apps.wards.models import NurseShift
+            from django.utils import timezone
+            now = timezone.now()
+            
+            active_wards = NurseShift.objects.filter(
+                nurse=user,
+                is_active=True,
+                start_time__lte=now,
+                end_time__gte=now
+            ).values_list('ward_id', flat=True)
+
+            patients = (
+                Patient.objects.filter(
+                    bed__room__ward_id__in=active_wards,
+                    is_active=True
+                )
+                .select_related("bed__room__ward", "doctor")
+                .order_by("-admission_date")
+            ).distinct()
 
         serializer = NursePatientSerializer(patients, many=True)
         return Response({"success": True, "data": serializer.data})

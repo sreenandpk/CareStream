@@ -84,9 +84,9 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 CORS_ALLOW_ALL_ORIGINS = True  # 🔨 THE HAMMER: Let's break the wall
 CORS_ALLOW_CREDENTIALS = True
 
-# 🔥 RESTORED SSL SECURITY
+# 🔥 RESTORED SSL SECURITY (ONLY IN PRODUCTION)
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-SECURE_SSL_REDIRECT = True
+SECURE_SSL_REDIRECT = not DEBUG
 
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
@@ -185,6 +185,7 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.IsAuthenticated",
+        "apps.core.role_permissions.IsReadOnlyOrDemoSafe",
     ),
      "EXCEPTION_HANDLER": "apps.core.exceptions.custom_exception_handler",
      "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
@@ -328,19 +329,19 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "CareStream Backend API",
     "VERSION": "1.0.0",
 
-    "SERVE_INCLUDE_SCHEMA": False,
+    "SWAGGER_UI_DIST": "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.0",
+    "SWAGGER_UI_FAVICON": "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.0/favicon-32x32.png",
 
+    "SERVE_INCLUDE_SCHEMA": False,
     "SWAGGER_UI_SETTINGS": {
         "layout": "BaseLayout",
         "docExpansion": "none",
         "filter": True,
         "defaultModelsExpandDepth": -1,
     },
-
     "SECURITY": [
         {"BearerAuth": []},
     ],
-
     "SECURITY_SCHEMES": {
         "BearerAuth": {
             "type": "http",
